@@ -14,6 +14,8 @@ import {
   Plus,
   ImagePlus,
   X,
+  Save,
+  Pencil,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -113,6 +115,9 @@ export default function MyProjectsPage() {
 
   const [loadingId, setLoadingId] = useState<number | null>(null);
   const [copiedId, setCopiedId] = useState<number | null>(null);
+  const [savedId, setSavedId] = useState<number | null>(null);
+  const [editingIds, setEditingIds] = useState<Set<number>>(new Set());
+  const [editDrafts, setEditDrafts] = useState<Record<number, string>>({});
   const [records, setRecords] = useState<Record<number, ProjectRecord>>({});
   const [deleteTarget, setDeleteTarget] = useState<number | null>(null);
   const [showCreate, setShowCreate] = useState(false);
@@ -460,27 +465,87 @@ export default function MyProjectsPage() {
                           <Sparkles size={16} />
                           AI 요약 결과
                         </div>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => handleCopy(jp.summary!, jp.project.id)}
-                        >
-                          {copiedId === jp.project.id ? (
-                            <>
-                              <Check size={14} className="mr-1" />
-                              복사됨
-                            </>
+                        <div className="flex items-center gap-1">
+                          {editingIds.has(jp.project.id) ? (
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => {
+                                updateSummary(
+                                  jp.project.id,
+                                  editDrafts[jp.project.id] ?? jp.summary!
+                                );
+                                setEditingIds((prev) => {
+                                  const next = new Set(prev);
+                                  next.delete(jp.project.id);
+                                  return next;
+                                });
+                                setSavedId(jp.project.id);
+                                setTimeout(() => setSavedId(null), 2000);
+                              }}
+                            >
+                              <Save size={14} className="mr-1" />
+                              저장
+                            </Button>
                           ) : (
-                            <>
-                              <Copy size={14} className="mr-1" />
-                              복사
-                            </>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => {
+                                setEditDrafts((prev) => ({
+                                  ...prev,
+                                  [jp.project.id]: jp.summary!,
+                                }));
+                                setEditingIds((prev) =>
+                                  new Set(prev).add(jp.project.id)
+                                );
+                              }}
+                            >
+                              <Pencil size={14} className="mr-1" />
+                              첨삭
+                            </Button>
                           )}
-                        </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleCopy(jp.summary!, jp.project.id)}
+                          >
+                            {copiedId === jp.project.id ? (
+                              <>
+                                <Check size={14} className="mr-1" />
+                                복사됨
+                              </>
+                            ) : (
+                              <>
+                                <Copy size={14} className="mr-1" />
+                                복사
+                              </>
+                            )}
+                          </Button>
+                        </div>
                       </div>
-                      <div className="whitespace-pre-wrap text-sm leading-relaxed">
-                        {jp.summary}
-                      </div>
+                      {editingIds.has(jp.project.id) ? (
+                        <Textarea
+                          value={editDrafts[jp.project.id] ?? jp.summary!}
+                          onChange={(e) =>
+                            setEditDrafts((prev) => ({
+                              ...prev,
+                              [jp.project.id]: e.target.value,
+                            }))
+                          }
+                          className="min-h-[150px] font-mono text-sm bg-white"
+                        />
+                      ) : (
+                        <div className="whitespace-pre-wrap text-sm leading-relaxed">
+                          {jp.summary}
+                          {savedId === jp.project.id && (
+                            <p className="mt-3 flex items-center gap-1 text-xs text-green-600">
+                              <Check size={12} />
+                              저장되었습니다
+                            </p>
+                          )}
+                        </div>
+                      )}
                     </div>
                   )}
                 </CardContent>

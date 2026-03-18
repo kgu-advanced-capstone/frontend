@@ -75,7 +75,7 @@ export default function Home() {
             <h1 className="mt-6 text-4xl font-bold leading-tight tracking-tight md:text-6xl">
               프로젝트로 완성하는
               <br />
-              <span className="text-primary">진짜 커리어</span>
+              <span className="text-primary">현업같은 직무경험</span>
             </h1>
           </div>
           <p className="animate-fade-in-up-delay mx-auto mt-6 max-w-xl text-center text-lg text-muted-foreground">
