@@ -2,9 +2,11 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Menu, X } from "lucide-react";
+import { Menu, X, LogOut, User } from "lucide-react";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { useAuth } from "@/contexts/AuthContext";
 
 const navLinks = [
   { href: "/projects", label: "프로젝트 매칭" },
@@ -13,6 +15,7 @@ const navLinks = [
 
 export default function Navbar() {
   const pathname = usePathname();
+  const { user, logout } = useAuth();
   const [mobileOpen, setMobileOpen] = useState(false);
 
   return (
@@ -36,7 +39,26 @@ export default function Navbar() {
               {link.label}
             </Link>
           ))}
-          <Button size="sm">로그인</Button>
+
+          {user ? (
+            <div className="flex items-center gap-3">
+              <div className="flex items-center gap-2">
+                <Avatar className="h-7 w-7">
+                  <AvatarFallback className="bg-primary/10 text-xs text-primary">
+                    {user.name[0]}
+                  </AvatarFallback>
+                </Avatar>
+                <span className="text-sm font-medium">{user.name}</span>
+              </div>
+              <Button size="sm" variant="ghost" onClick={logout}>
+                <LogOut size={16} />
+              </Button>
+            </div>
+          ) : (
+            <Button size="sm" render={<Link href="/login" />}>
+              로그인
+            </Button>
+          )}
         </div>
 
         <button className="md:hidden" onClick={() => setMobileOpen(!mobileOpen)}>
@@ -60,9 +82,33 @@ export default function Navbar() {
               {link.label}
             </Link>
           ))}
-          <Button className="mt-2 w-full" size="sm">
-            로그인
-          </Button>
+          {user ? (
+            <div className="mt-2 flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <User size={16} className="text-muted-foreground" />
+                <span className="text-sm font-medium">{user.name}</span>
+              </div>
+              <Button
+                size="sm"
+                variant="ghost"
+                onClick={() => {
+                  logout();
+                  setMobileOpen(false);
+                }}
+              >
+                <LogOut size={16} />
+                로그아웃
+              </Button>
+            </div>
+          ) : (
+            <Button
+              className="mt-2 w-full"
+              size="sm"
+              render={<Link href="/login" onClick={() => setMobileOpen(false)} />}
+            >
+              로그인
+            </Button>
+          )}
         </div>
       )}
     </nav>
