@@ -15,6 +15,10 @@ import {
   X,
   Save,
   Pencil,
+  Users,
+  Clock,
+  Play,
+  CheckCircle,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -31,7 +35,7 @@ import {
   DialogDescription,
   DialogFooter,
 } from "@/components/ui/dialog";
-import { useProjects } from "@/contexts/ProjectContext";
+import { useProjects, type ProjectStatus } from "@/contexts/ProjectContext";
 import { buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { categories } from "@/data/dummy";
@@ -102,12 +106,31 @@ const emptyRecord: ProjectRecord = {
   images: [],
 };
 
+const statusConfig: Record<ProjectStatus, { label: string; color: string; icon: typeof Clock }> = {
+  recruiting: {
+    label: "매칭중",
+    color: "bg-amber-500/10 text-amber-600 border-amber-500/20",
+    icon: Users,
+  },
+  "in-progress": {
+    label: "진행",
+    color: "bg-blue-500/10 text-blue-600 border-blue-500/20",
+    icon: Play,
+  },
+  completed: {
+    label: "완료",
+    color: "bg-green-500/10 text-green-600 border-green-500/20",
+    icon: CheckCircle,
+  },
+};
+
 export default function MyProjectsPage() {
   const {
     joinedProjects,
     createdProjects,
     updateMarkdown,
     updateSummary,
+    changeStatus,
     createProject,
   } = useProjects();
 
@@ -131,7 +154,6 @@ export default function MyProjectsPage() {
       ...prev,
       [id]: { ...(prev[id] || emptyRecord), [field]: value },
     }));
-    // markdown sync for context
     const rec = { ...(records[id] || emptyRecord), [field]: value };
     const md = [
       rec.role && `역할: ${rec.role}`,
@@ -210,6 +232,18 @@ export default function MyProjectsPage() {
     return !!(r.tasks.trim() || r.achievements.trim() || r.background.trim());
   };
 
+  const nextStatus: Record<ProjectStatus, ProjectStatus | null> = {
+    recruiting: "in-progress",
+    "in-progress": "completed",
+    completed: null,
+  };
+
+  const nextStatusLabel: Record<ProjectStatus, string> = {
+    recruiting: "진행으로 변경",
+    "in-progress": "완료로 변경",
+    completed: "",
+  };
+
   return (
     <div className="mx-auto max-w-5xl px-6 py-12">
       <div className="mb-8 flex items-start justify-between">
@@ -251,6 +285,10 @@ export default function MyProjectsPage() {
         <div className="space-y-6">
           {joinedProjects.map((jp) => {
             const rec = getRecord(jp.project.id);
+            const status = statusConfig[jp.status];
+            const StatusIcon = status.icon;
+            const canRecord = jp.status !== "recruiting";
+            const next = nextStatus[jp.status];
 
             return (
               <Card key={jp.project.id}>
@@ -259,6 +297,10 @@ export default function MyProjectsPage() {
                     <div className="flex-1">
                       <div className="flex items-center gap-2 flex-wrap">
                         <CardTitle>{jp.project.title}</CardTitle>
+                        <Badge className={status.color}>
+                          <StatusIcon size={12} className="mr-1" />
+                          {status.label}
+                        </Badge>
                         <Badge variant="secondary">{jp.project.category}</Badge>
                         {myCreatedIds.has(jp.project.id) && (
                           <Badge variant="outline">내가 생성</Badge>
@@ -278,257 +320,288 @@ export default function MyProjectsPage() {
                       </div>
                       <p className="mt-2 text-xs text-muted-foreground">참여일: {jp.joinedAt}</p>
                     </div>
+                    {/* 상태 변경 버튼 (팀장/생성자만) */}
+                    {jp.isOwner && next && (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => changeStatus(jp.project.id, next)}
+                      >
+                        {nextStatusLabel[jp.status]}
+                      </Button>
+                    )}
                   </div>
                 </CardHeader>
 
                 <CardContent className="space-y-5">
-                  {/* 담당 역할 */}
-                  <div>
-                    <Label className="mb-2 block">담당 역할 *</Label>
-                    <Input
-                      value={rec.role}
-                      onChange={(e) => updateRecord(jp.project.id, "role", e.target.value)}
-                      placeholder="예: 프론트엔드 개발, 백엔드 리드, PM 등"
-                    />
-                  </div>
+                  {/* 매칭중 상태 */}
+                  {!canRecord && (
+                    <div className="rounded-lg border border-amber-200 bg-amber-50 p-6 text-center">
+                      <Users size={32} className="mx-auto mb-3 text-amber-500" />
+                      <p className="font-medium text-amber-800">
+                        팀원 모집 중입니다
+                      </p>
+                      <p className="mt-1 text-sm text-amber-600">
+                        매칭이 완료되어 프로젝트가 &quot;진행&quot; 상태로 변경되면 경험 기록을 작성할 수 있습니다.
+                      </p>
+                      <p className="mt-3 text-xs text-amber-500">
+                        현재 {jp.project.currentMembers}/{jp.project.maxMembers}명 참여 중 · 마감일: {jp.project.deadline}
+                      </p>
+                    </div>
+                  )}
 
-                  {/* 프로젝트 배경/목표 */}
-                  <div>
-                    <Label className="mb-2 block">프로젝트 배경 및 목표</Label>
-                    <Textarea
-                      value={rec.background}
-                      onChange={(e) => updateRecord(jp.project.id, "background", e.target.value)}
-                      className="min-h-[80px]"
-                      placeholder="이 프로젝트를 시작하게 된 배경과 달성하고자 한 목표를 적어주세요."
-                    />
-                  </div>
+                  {/* 진행/완료 상태 — 경험 기록 폼 */}
+                  {canRecord && (
+                    <>
+                      {/* 담당 역할 */}
+                      <div>
+                        <Label className="mb-2 block">담당 역할 *</Label>
+                        <Input
+                          value={rec.role}
+                          onChange={(e) => updateRecord(jp.project.id, "role", e.target.value)}
+                          placeholder="예: 프론트엔드 개발, 백엔드 리드, PM 등"
+                        />
+                      </div>
 
-                  {/* 담당 업무 */}
-                  <div>
-                    <Label className="mb-2 block">담당 업무 *</Label>
-                    <Textarea
-                      value={rec.tasks}
-                      onChange={(e) => updateRecord(jp.project.id, "tasks", e.target.value)}
-                      className="min-h-[120px]"
-                      placeholder={`- API 설계 및 구현 (RESTful, 10+ 엔드포인트)\n- 데이터베이스 스키마 설계 (PostgreSQL)\n- CI/CD 파이프라인 구축 (GitHub Actions)\n- 코드 리뷰 및 팀 기술 가이드 작성`}
-                    />
-                    <p className="mt-1 text-xs text-muted-foreground">
-                      한 줄에 하나씩, 구체적으로 작성하세요. 수치가 있으면 더 좋습니다.
-                    </p>
-                  </div>
+                      {/* 프로젝트 배경/목표 */}
+                      <div>
+                        <Label className="mb-2 block">프로젝트 배경 및 목표</Label>
+                        <Textarea
+                          value={rec.background}
+                          onChange={(e) => updateRecord(jp.project.id, "background", e.target.value)}
+                          className="min-h-[80px]"
+                          placeholder="이 프로젝트를 시작하게 된 배경과 달성하고자 한 목표를 적어주세요."
+                        />
+                      </div>
 
-                  {/* 사용 기술 및 선정 이유 */}
-                  <div>
-                    <Label className="mb-2 block">사용 기술 및 선정 이유</Label>
-                    <Textarea
-                      value={rec.techStack}
-                      onChange={(e) => updateRecord(jp.project.id, "techStack", e.target.value)}
-                      className="min-h-[80px]"
-                      placeholder={`- React: 컴포넌트 기반 UI 설계에 적합\n- WebSocket: 실시간 양방향 통신 필요\n- Redis: 세션 캐싱으로 응답 속도 개선`}
-                    />
-                  </div>
+                      {/* 담당 업무 */}
+                      <div>
+                        <Label className="mb-2 block">담당 업무 *</Label>
+                        <Textarea
+                          value={rec.tasks}
+                          onChange={(e) => updateRecord(jp.project.id, "tasks", e.target.value)}
+                          className="min-h-[120px]"
+                          placeholder={`- API 설계 및 구현 (RESTful, 10+ 엔드포인트)\n- 데이터베이스 스키마 설계 (PostgreSQL)\n- CI/CD 파이프라인 구축 (GitHub Actions)\n- 코드 리뷰 및 팀 기술 가이드 작성`}
+                        />
+                        <p className="mt-1 text-xs text-muted-foreground">
+                          한 줄에 하나씩, 구체적으로 작성하세요. 수치가 있으면 더 좋습니다.
+                        </p>
+                      </div>
 
-                  {/* 성과 및 결과 */}
-                  <div>
-                    <Label className="mb-2 block">성과 및 결과 *</Label>
-                    <Textarea
-                      value={rec.achievements}
-                      onChange={(e) => updateRecord(jp.project.id, "achievements", e.target.value)}
-                      className="min-h-[100px]"
-                      placeholder={`- API 응답 시간 평균 200ms → 50ms로 75% 개선\n- 테스트 커버리지 0% → 85% 달성\n- DAU 500명 달성, 사용자 만족도 4.5/5`}
-                    />
-                    <p className="mt-1 text-xs text-muted-foreground">
-                      수치, 비율, before/after 등 정량적으로 기록하면 이력서에서 더 강력합니다.
-                    </p>
-                  </div>
+                      {/* 사용 기술 및 선정 이유 */}
+                      <div>
+                        <Label className="mb-2 block">사용 기술 및 선정 이유</Label>
+                        <Textarea
+                          value={rec.techStack}
+                          onChange={(e) => updateRecord(jp.project.id, "techStack", e.target.value)}
+                          className="min-h-[80px]"
+                          placeholder={`- React: 컴포넌트 기반 UI 설계에 적합\n- WebSocket: 실시간 양방향 통신 필요\n- Redis: 세션 캐싱으로 응답 속도 개선`}
+                        />
+                      </div>
 
-                  {/* 문제 해결 경험 */}
-                  <div>
-                    <Label className="mb-2 block">문제 해결 경험 (트러블슈팅)</Label>
-                    <Textarea
-                      value={rec.troubleshooting}
-                      onChange={(e) =>
-                        updateRecord(jp.project.id, "troubleshooting", e.target.value)
-                      }
-                      className="min-h-[80px]"
-                      placeholder={`- N+1 쿼리 문제 발견 → DataLoader 패턴 적용으로 해결\n- 메모리 누수 이슈 → useEffect cleanup 정리로 해결`}
-                    />
-                  </div>
+                      {/* 성과 및 결과 */}
+                      <div>
+                        <Label className="mb-2 block">성과 및 결과 *</Label>
+                        <Textarea
+                          value={rec.achievements}
+                          onChange={(e) => updateRecord(jp.project.id, "achievements", e.target.value)}
+                          className="min-h-[100px]"
+                          placeholder={`- API 응답 시간 평균 200ms → 50ms로 75% 개선\n- 테스트 커버리지 0% → 85% 달성\n- DAU 500명 달성, 사용자 만족도 4.5/5`}
+                        />
+                        <p className="mt-1 text-xs text-muted-foreground">
+                          수치, 비율, before/after 등 정량적으로 기록하면 이력서에서 더 강력합니다.
+                        </p>
+                      </div>
 
-                  {/* 배운 점 */}
-                  <div>
-                    <Label className="mb-2 block">배운 점 / 회고</Label>
-                    <Textarea
-                      value={rec.learned}
-                      onChange={(e) => updateRecord(jp.project.id, "learned", e.target.value)}
-                      className="min-h-[60px]"
-                      placeholder="이 프로젝트를 통해 배운 점, 아쉬운 점, 다음에 개선하고 싶은 점 등"
-                    />
-                  </div>
+                      {/* 문제 해결 경험 */}
+                      <div>
+                        <Label className="mb-2 block">문제 해결 경험 (트러블슈팅)</Label>
+                        <Textarea
+                          value={rec.troubleshooting}
+                          onChange={(e) =>
+                            updateRecord(jp.project.id, "troubleshooting", e.target.value)
+                          }
+                          className="min-h-[80px]"
+                          placeholder={`- N+1 쿼리 문제 발견 → DataLoader 패턴 적용으로 해결\n- 메모리 누수 이슈 → useEffect cleanup 정리로 해결`}
+                        />
+                      </div>
 
-                  {/* 이미지 업로드 */}
-                  <div>
-                    <Label className="mb-2 block">스크린샷 / 결과물 이미지</Label>
-                    <div className="flex flex-wrap gap-3">
-                      {rec.images.map((img, idx) => (
-                        <div key={idx} className="group relative h-24 w-24 rounded-lg border overflow-hidden">
-                          <Image
-                            src={img}
-                            alt={`screenshot-${idx}`}
-                            fill
-                            className="object-cover"
-                          />
+                      {/* 배운 점 */}
+                      <div>
+                        <Label className="mb-2 block">배운 점 / 회고</Label>
+                        <Textarea
+                          value={rec.learned}
+                          onChange={(e) => updateRecord(jp.project.id, "learned", e.target.value)}
+                          className="min-h-[60px]"
+                          placeholder="이 프로젝트를 통해 배운 점, 아쉬운 점, 다음에 개선하고 싶은 점 등"
+                        />
+                      </div>
+
+                      {/* 이미지 업로드 */}
+                      <div>
+                        <Label className="mb-2 block">스크린샷 / 결과물 이미지</Label>
+                        <div className="flex flex-wrap gap-3">
+                          {rec.images.map((img, idx) => (
+                            <div key={idx} className="group relative h-24 w-24 rounded-lg border overflow-hidden">
+                              <Image
+                                src={img}
+                                alt={`screenshot-${idx}`}
+                                fill
+                                className="object-cover"
+                              />
+                              <button
+                                onClick={() => removeImage(jp.project.id, idx)}
+                                className="absolute top-1 right-1 hidden rounded-full bg-black/60 p-0.5 text-white group-hover:block"
+                              >
+                                <X size={12} />
+                              </button>
+                            </div>
+                          ))}
                           <button
-                            onClick={() => removeImage(jp.project.id, idx)}
-                            className="absolute top-1 right-1 hidden rounded-full bg-black/60 p-0.5 text-white group-hover:block"
+                            onClick={() => {
+                              setActiveImageProjectId(jp.project.id);
+                              fileInputRef.current?.click();
+                            }}
+                            className="flex h-24 w-24 flex-col items-center justify-center gap-1 rounded-lg border-2 border-dashed border-muted-foreground/30 text-muted-foreground/50 transition-colors hover:border-primary/50 hover:text-primary/50"
                           >
-                            <X size={12} />
+                            <ImagePlus size={20} />
+                            <span className="text-[10px]">추가</span>
                           </button>
                         </div>
-                      ))}
-                      <button
-                        onClick={() => {
-                          setActiveImageProjectId(jp.project.id);
-                          fileInputRef.current?.click();
-                        }}
-                        className="flex h-24 w-24 flex-col items-center justify-center gap-1 rounded-lg border-2 border-dashed border-muted-foreground/30 text-muted-foreground/50 transition-colors hover:border-primary/50 hover:text-primary/50"
-                      >
-                        <ImagePlus size={20} />
-                        <span className="text-[10px]">추가</span>
-                      </button>
-                    </div>
-                    <input
-                      ref={fileInputRef}
-                      type="file"
-                      accept="image/*"
-                      multiple
-                      className="hidden"
-                      onChange={(e) => {
-                        if (activeImageProjectId !== null) {
-                          handleImageUpload(activeImageProjectId, e.target.files);
-                          e.target.value = "";
-                        }
-                      }}
-                    />
-                  </div>
+                        <input
+                          ref={fileInputRef}
+                          type="file"
+                          accept="image/*"
+                          multiple
+                          className="hidden"
+                          onChange={(e) => {
+                            if (activeImageProjectId !== null) {
+                              handleImageUpload(activeImageProjectId, e.target.files);
+                              e.target.value = "";
+                            }
+                          }}
+                        />
+                      </div>
 
-                  <Separator />
+                      <Separator />
 
-                  {/* AI 요약 버튼 */}
-                  <div className="flex items-center gap-3">
-                    <Button
-                      onClick={() => handleAiSummarize(jp.project.id)}
-                      disabled={loadingId === jp.project.id || !hasContent(jp.project.id)}
-                    >
-                      {loadingId === jp.project.id ? (
-                        <>
-                          <div className="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-primary-foreground/30 border-t-primary-foreground" />
-                          요약 중...
-                        </>
-                      ) : (
-                        <>
-                          <Brain size={16} className="mr-2" />
-                          AI 요약
-                        </>
-                      )}
-                    </Button>
-                    {!hasContent(jp.project.id) && (
-                      <span className="text-xs text-muted-foreground">
-                        담당 업무 또는 성과를 기록해야 AI 요약이 가능합니다
-                      </span>
-                    )}
-                  </div>
-
-                  {/* AI 요약 결과 */}
-                  {jp.summary && (
-                    <div className="rounded-lg border bg-primary/5 p-6">
-                      <div className="mb-3 flex items-center justify-between">
-                        <div className="flex items-center gap-2 text-sm font-medium text-primary">
-                          <Sparkles size={16} />
-                          AI 요약 결과
-                        </div>
-                        <div className="flex items-center gap-1">
-                          {editingIds.has(jp.project.id) ? (
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => {
-                                updateSummary(
-                                  jp.project.id,
-                                  editDrafts[jp.project.id] ?? jp.summary!
-                                );
-                                setEditingIds((prev) => {
-                                  const next = new Set(prev);
-                                  next.delete(jp.project.id);
-                                  return next;
-                                });
-                                setSavedId(jp.project.id);
-                                setTimeout(() => setSavedId(null), 2000);
-                              }}
-                            >
-                              <Save size={14} className="mr-1" />
-                              저장
-                            </Button>
+                      {/* AI 요약 버튼 */}
+                      <div className="flex items-center gap-3">
+                        <Button
+                          onClick={() => handleAiSummarize(jp.project.id)}
+                          disabled={loadingId === jp.project.id || !hasContent(jp.project.id)}
+                        >
+                          {loadingId === jp.project.id ? (
+                            <>
+                              <div className="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-primary-foreground/30 border-t-primary-foreground" />
+                              요약 중...
+                            </>
                           ) : (
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => {
+                            <>
+                              <Brain size={16} className="mr-2" />
+                              AI 요약
+                            </>
+                          )}
+                        </Button>
+                        {!hasContent(jp.project.id) && (
+                          <span className="text-xs text-muted-foreground">
+                            담당 업무 또는 성과를 기록해야 AI 요약이 가능합니다
+                          </span>
+                        )}
+                      </div>
+
+                      {/* AI 요약 결과 */}
+                      {jp.summary && (
+                        <div className="rounded-lg border bg-primary/5 p-6">
+                          <div className="mb-3 flex items-center justify-between">
+                            <div className="flex items-center gap-2 text-sm font-medium text-primary">
+                              <Sparkles size={16} />
+                              AI 요약 결과
+                            </div>
+                            <div className="flex items-center gap-1">
+                              {editingIds.has(jp.project.id) ? (
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => {
+                                    updateSummary(
+                                      jp.project.id,
+                                      editDrafts[jp.project.id] ?? jp.summary!
+                                    );
+                                    setEditingIds((prev) => {
+                                      const next = new Set(prev);
+                                      next.delete(jp.project.id);
+                                      return next;
+                                    });
+                                    setSavedId(jp.project.id);
+                                    setTimeout(() => setSavedId(null), 2000);
+                                  }}
+                                >
+                                  <Save size={14} className="mr-1" />
+                                  저장
+                                </Button>
+                              ) : (
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => {
+                                    setEditDrafts((prev) => ({
+                                      ...prev,
+                                      [jp.project.id]: jp.summary!,
+                                    }));
+                                    setEditingIds((prev) =>
+                                      new Set(prev).add(jp.project.id)
+                                    );
+                                  }}
+                                >
+                                  <Pencil size={14} className="mr-1" />
+                                  첨삭
+                                </Button>
+                              )}
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => handleCopy(jp.summary!, jp.project.id)}
+                              >
+                                {copiedId === jp.project.id ? (
+                                  <>
+                                    <Check size={14} className="mr-1" />
+                                    복사됨
+                                  </>
+                                ) : (
+                                  <>
+                                    <Copy size={14} className="mr-1" />
+                                    복사
+                                  </>
+                                )}
+                              </Button>
+                            </div>
+                          </div>
+                          {editingIds.has(jp.project.id) ? (
+                            <Textarea
+                              value={editDrafts[jp.project.id] ?? jp.summary!}
+                              onChange={(e) =>
                                 setEditDrafts((prev) => ({
                                   ...prev,
-                                  [jp.project.id]: jp.summary!,
-                                }));
-                                setEditingIds((prev) =>
-                                  new Set(prev).add(jp.project.id)
-                                );
-                              }}
-                            >
-                              <Pencil size={14} className="mr-1" />
-                              첨삭
-                            </Button>
-                          )}
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => handleCopy(jp.summary!, jp.project.id)}
-                          >
-                            {copiedId === jp.project.id ? (
-                              <>
-                                <Check size={14} className="mr-1" />
-                                복사됨
-                              </>
-                            ) : (
-                              <>
-                                <Copy size={14} className="mr-1" />
-                                복사
-                              </>
-                            )}
-                          </Button>
-                        </div>
-                      </div>
-                      {editingIds.has(jp.project.id) ? (
-                        <Textarea
-                          value={editDrafts[jp.project.id] ?? jp.summary!}
-                          onChange={(e) =>
-                            setEditDrafts((prev) => ({
-                              ...prev,
-                              [jp.project.id]: e.target.value,
-                            }))
-                          }
-                          className="min-h-[150px] font-mono text-sm bg-white"
-                        />
-                      ) : (
-                        <div className="whitespace-pre-wrap text-sm leading-relaxed">
-                          {jp.summary}
-                          {savedId === jp.project.id && (
-                            <p className="mt-3 flex items-center gap-1 text-xs text-green-600">
-                              <Check size={12} />
-                              저장되었습니다
-                            </p>
+                                  [jp.project.id]: e.target.value,
+                                }))
+                              }
+                              className="min-h-[150px] font-mono text-sm bg-white"
+                            />
+                          ) : (
+                            <div className="whitespace-pre-wrap text-sm leading-relaxed">
+                              {jp.summary}
+                              {savedId === jp.project.id && (
+                                <p className="mt-3 flex items-center gap-1 text-xs text-green-600">
+                                  <Check size={12} />
+                                  저장되었습니다
+                                </p>
+                              )}
+                            </div>
                           )}
                         </div>
                       )}
-                    </div>
+                    </>
                   )}
                 </CardContent>
               </Card>

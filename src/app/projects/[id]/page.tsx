@@ -29,7 +29,7 @@ export default function ProjectDetailPage({
 }) {
   const { id } = use(params);
   const project = projects.find((p) => p.id === Number(id));
-  const { isJoined, joinProject, leaveProject } = useProjects();
+  const { isJoined, joinProject } = useProjects();
   const [showJoinModal, setShowJoinModal] = useState(false);
 
   if (!project) {
@@ -74,19 +74,11 @@ export default function ProjectDetailPage({
           </p>
         </div>
         {joined ? (
-          <Button
-            size="lg"
-            variant="outline"
-            onClick={() => leaveProject(project.id)}
-          >
-            참가 취소
-          </Button>
+          <Badge className="bg-primary/10 text-primary border-primary/20 text-sm px-4 py-2">
+            참여 중
+          </Badge>
         ) : (
-          <Button
-            size="lg"
-            disabled={isFull}
-            onClick={handleJoin}
-          >
+          <Button size="lg" disabled={isFull} onClick={handleJoin}>
             {isFull ? "마감" : "프로젝트 참가"}
           </Button>
         )}
@@ -190,8 +182,8 @@ export default function ProjectDetailPage({
             </div>
             <DialogTitle className="text-center">참가 신청 완료</DialogTitle>
             <DialogDescription className="text-center">
-              <strong>{project.title}</strong>에 참가 신청이
-              완료되었습니다. 프로젝트 관리에서 경험을 기록해보세요.
+              <strong>{project.title}</strong>에 참가가
+              완료되었습니다. 프로젝트 관리에서 확인하세요.
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>

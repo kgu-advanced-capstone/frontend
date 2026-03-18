@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef, useCallback } from "react";
-import { Search, CheckCircle } from "lucide-react";
+import { Search, CheckCircle, AlertTriangle } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -23,6 +23,7 @@ export default function ProjectsPage() {
   const [category, setCategory] = useState("전체");
   const [search, setSearch] = useState("");
   const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
+  const [confirmProject, setConfirmProject] = useState<{ id: number; title: string } | null>(null);
   const [joinedProject, setJoinedProject] = useState<string | null>(null);
   const loaderRef = useRef<HTMLDivElement>(null);
   const { joinProject, isJoined } = useProjects();
@@ -63,10 +64,18 @@ export default function ProjectsPage() {
     };
   }, [loadMore]);
 
-  const handleJoin = (id: number) => {
+  const handleJoinClick = (id: number) => {
     const project = allProjects.find((p) => p.id === id);
-    joinProject(id);
-    setJoinedProject(project?.title ?? "프로젝트");
+    if (project) {
+      setConfirmProject({ id: project.id, title: project.title });
+    }
+  };
+
+  const handleConfirmJoin = () => {
+    if (!confirmProject) return;
+    joinProject(confirmProject.id);
+    setJoinedProject(confirmProject.title);
+    setConfirmProject(null);
   };
 
   return (
@@ -135,7 +144,7 @@ export default function ProjectsPage() {
                     }
                   : project
               }
-              onJoin={handleJoin}
+              onJoin={handleJoinClick}
               joined={isJoined(project.id)}
             />
           ))}
@@ -154,6 +163,35 @@ export default function ProjectsPage() {
         </p>
       )}
 
+      {/* 참가 확인 모달 */}
+      <Dialog
+        open={confirmProject !== null}
+        onOpenChange={(open) => {
+          if (!open) setConfirmProject(null);
+        }}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <div className="mx-auto mb-2 flex h-12 w-12 items-center justify-center rounded-full bg-amber-100">
+              <AlertTriangle size={24} className="text-amber-600" />
+            </div>
+            <DialogTitle className="text-center">참가 신청</DialogTitle>
+            <DialogDescription className="text-center">
+              <strong>{confirmProject?.title}</strong>에 참가하시겠습니까?
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="flex gap-2 sm:gap-0">
+            <Button variant="outline" className="flex-1" onClick={() => setConfirmProject(null)}>
+              취소
+            </Button>
+            <Button className="flex-1" onClick={handleConfirmJoin}>
+              참가 신청
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* 참가 완료 모달 */}
       <Dialog
         open={joinedProject !== null}
         onOpenChange={(open) => {
@@ -167,8 +205,8 @@ export default function ProjectsPage() {
             </div>
             <DialogTitle className="text-center">참가 신청 완료</DialogTitle>
             <DialogDescription className="text-center">
-              <strong>{joinedProject}</strong>에 참가 신청이
-              완료되었습니다. 팀장이 승인하면 알림을 보내드립니다.
+              <strong>{joinedProject}</strong>에 참가가
+              완료되었습니다. 프로젝트 관리에서 확인하세요.
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>

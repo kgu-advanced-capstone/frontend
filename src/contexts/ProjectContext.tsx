@@ -80,12 +80,14 @@ export function ProjectProvider({ children }: { children: ReactNode }) {
 
       setJoinedProjects((prev) => {
         if (prev.some((jp) => jp.project.id === id)) return prev;
+        const currentCount = project.currentMembers + 1; // 본인 포함
+        const isFull = currentCount >= project.maxMembers;
         return [
           ...prev,
           {
             project,
             joinedAt: new Date().toISOString().slice(0, 10),
-            status: "recruiting" as ProjectStatus,
+            status: isFull ? ("in-progress" as ProjectStatus) : ("recruiting" as ProjectStatus),
             markdown: "",
             summary: null,
             isOwner: false,
@@ -93,7 +95,7 @@ export function ProjectProvider({ children }: { children: ReactNode }) {
         ];
       });
 
-      addNotification(`"${project.title}" 프로젝트에 참가 신청했습니다.`);
+      addNotification(`"${project.title}" 프로젝트에 참가했습니다.`);
     },
     [createdProjects, addNotification]
   );

@@ -1,10 +1,12 @@
 "use client";
 
 import Link from "next/link";
-import { Users, Calendar } from "lucide-react";
+import { Users, Calendar, Eye } from "lucide-react";
 import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { buttonVariants } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 import type { Project } from "@/data/dummy";
 
 interface ProjectCardProps {
@@ -39,7 +41,7 @@ export default function ProjectCard({ project, onJoin, joined }: ProjectCardProp
       </CardHeader>
 
       <CardContent className="flex-1 pb-3">
-        <p className="text-sm leading-relaxed text-muted-foreground">
+        <p className="text-sm leading-relaxed text-muted-foreground line-clamp-2">
           {project.description}
         </p>
         <div className="mt-4 flex flex-wrap gap-1.5">
@@ -62,20 +64,29 @@ export default function ProjectCard({ project, onJoin, joined }: ProjectCardProp
             ~{project.deadline}
           </span>
         </div>
-        {joined ? (
-          <Button size="sm" variant="outline" disabled>
-            참여 중
-          </Button>
-        ) : (
-          <Button
-            size="sm"
-            onClick={() => onJoin?.(project.id)}
-            disabled={isFull}
-            variant={isFull ? "outline" : "default"}
+        <div className="flex items-center gap-2">
+          <Link
+            href={`/projects/${project.id}`}
+            className={cn(buttonVariants({ size: "sm", variant: "outline" }))}
           >
-            {isFull ? "마감" : "참가"}
-          </Button>
-        )}
+            <Eye size={14} className="mr-1" />
+            상세
+          </Link>
+          {joined ? (
+            <Button size="sm" variant="outline" disabled>
+              참여 중
+            </Button>
+          ) : (
+            <Button
+              size="sm"
+              onClick={() => onJoin?.(project.id)}
+              disabled={isFull}
+              variant={isFull ? "outline" : "default"}
+            >
+              {isFull ? "마감" : "참가"}
+            </Button>
+          )}
+        </div>
       </CardFooter>
 
       <div className="px-6 pb-4">
