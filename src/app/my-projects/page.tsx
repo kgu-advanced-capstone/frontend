@@ -10,7 +10,6 @@ import {
   Copy,
   Check,
   ArrowRight,
-  Trash2,
   Plus,
   ImagePlus,
   X,
@@ -107,7 +106,6 @@ export default function MyProjectsPage() {
   const {
     joinedProjects,
     createdProjects,
-    leaveProject,
     updateMarkdown,
     updateSummary,
     createProject,
@@ -119,7 +117,6 @@ export default function MyProjectsPage() {
   const [editingIds, setEditingIds] = useState<Set<number>>(new Set());
   const [editDrafts, setEditDrafts] = useState<Record<number, string>>({});
   const [records, setRecords] = useState<Record<number, ProjectRecord>>({});
-  const [deleteTarget, setDeleteTarget] = useState<number | null>(null);
   const [showCreate, setShowCreate] = useState(false);
   const [createForm, setCreateForm] = useState(defaultCreateForm);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -188,13 +185,6 @@ export default function MyProjectsPage() {
     await navigator.clipboard.writeText(text);
     setCopiedId(id);
     setTimeout(() => setCopiedId(null), 2000);
-  };
-
-  const handleDelete = () => {
-    if (deleteTarget !== null) {
-      leaveProject(deleteTarget);
-      setDeleteTarget(null);
-    }
   };
 
   const handleCreateSubmit = () => {
@@ -288,14 +278,6 @@ export default function MyProjectsPage() {
                       </div>
                       <p className="mt-2 text-xs text-muted-foreground">참여일: {jp.joinedAt}</p>
                     </div>
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      className="text-destructive hover:text-destructive"
-                      onClick={() => setDeleteTarget(jp.project.id)}
-                    >
-                      <Trash2 size={16} />
-                    </Button>
                   </div>
                 </CardHeader>
 
@@ -641,31 +623,6 @@ export default function MyProjectsPage() {
         </DialogContent>
       </Dialog>
 
-      {/* 삭제 확인 모달 */}
-      <Dialog
-        open={deleteTarget !== null}
-        onOpenChange={(open) => {
-          if (!open) setDeleteTarget(null);
-        }}
-      >
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>프로젝트 탈퇴</DialogTitle>
-            <DialogDescription>
-              정말 이 프로젝트에서 탈퇴하시겠습니까? 기록한 경험과 AI 요약
-              결과가 모두 삭제됩니다.
-            </DialogDescription>
-          </DialogHeader>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setDeleteTarget(null)}>
-              취소
-            </Button>
-            <Button variant="destructive" onClick={handleDelete}>
-              탈퇴
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
     </div>
   );
 }
