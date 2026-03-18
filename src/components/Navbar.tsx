@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Menu, X } from "lucide-react";
 import { useState } from "react";
+import { Button } from "@/components/ui/button";
 
 const navLinks = [
   { href: "/projects", label: "프로젝트 매칭" },
@@ -15,13 +16,12 @@ export default function Navbar() {
   const [mobileOpen, setMobileOpen] = useState(false);
 
   return (
-    <nav className="fixed top-0 z-50 w-full border-b border-gray-200 bg-white/80 backdrop-blur-md">
+    <nav className="fixed top-0 z-50 w-full border-b bg-background/80 backdrop-blur-md">
       <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-6">
-        <Link href="/" className="text-xl font-bold text-indigo-600">
+        <Link href="/" className="text-xl font-bold text-primary">
           Buildi
         </Link>
 
-        {/* Desktop */}
         <div className="hidden items-center gap-8 md:flex">
           {navLinks.map((link) => (
             <Link
@@ -29,30 +29,23 @@ export default function Navbar() {
               href={link.href}
               className={`text-sm font-medium transition-colors ${
                 pathname.startsWith(link.href)
-                  ? "text-indigo-600"
-                  : "text-gray-600 hover:text-gray-900"
+                  ? "text-primary"
+                  : "text-muted-foreground hover:text-foreground"
               }`}
             >
               {link.label}
             </Link>
           ))}
-          <button className="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-indigo-700">
-            로그인
-          </button>
+          <Button size="sm">로그인</Button>
         </div>
 
-        {/* Mobile toggle */}
-        <button
-          className="md:hidden"
-          onClick={() => setMobileOpen(!mobileOpen)}
-        >
+        <button className="md:hidden" onClick={() => setMobileOpen(!mobileOpen)}>
           {mobileOpen ? <X size={24} /> : <Menu size={24} />}
         </button>
       </div>
 
-      {/* Mobile menu */}
       {mobileOpen && (
-        <div className="border-t border-gray-200 bg-white px-6 py-4 md:hidden">
+        <div className="border-t bg-background px-6 py-4 md:hidden">
           {navLinks.map((link) => (
             <Link
               key={link.href}
@@ -60,16 +53,16 @@ export default function Navbar() {
               onClick={() => setMobileOpen(false)}
               className={`block py-2 text-sm font-medium ${
                 pathname.startsWith(link.href)
-                  ? "text-indigo-600"
-                  : "text-gray-600"
+                  ? "text-primary"
+                  : "text-muted-foreground"
               }`}
             >
               {link.label}
             </Link>
           ))}
-          <button className="mt-2 w-full rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white">
+          <Button className="mt-2 w-full" size="sm">
             로그인
-          </button>
+          </Button>
         </div>
       )}
     </nav>
