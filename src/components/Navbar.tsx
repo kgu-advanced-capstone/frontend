@@ -2,22 +2,32 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Menu, X, LogOut, User } from "lucide-react";
+import { Menu, X, LogOut, User, Bell, CheckCheck } from "lucide-react";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { buttonVariants } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { useAuth } from "@/contexts/AuthContext";
+import { useProjects } from "@/contexts/ProjectContext";
 import { cn } from "@/lib/utils";
 
 const navLinks = [
   { href: "/projects", label: "프로젝트 매칭" },
+  { href: "/my-projects", label: "프로젝트 관리" },
   { href: "/resume", label: "AI 이력서" },
 ];
 
 export default function Navbar() {
   const pathname = usePathname();
   const { user, logout } = useAuth();
+  const { notifications, unreadCount, markNotificationRead, markAllNotificationsRead } =
+    useProjects();
   const [mobileOpen, setMobileOpen] = useState(false);
 
   return (
@@ -41,6 +51,61 @@ export default function Navbar() {
               {link.label}
             </Link>
           ))}
+
+          {/* 알림 */}
+          <Popover>
+            <PopoverTrigger className="relative p-1">
+              <Bell size={20} className="text-muted-foreground hover:text-foreground transition-colors" />
+              {unreadCount > 0 && (
+                <span className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-destructive text-[10px] font-bold text-white">
+                  {unreadCount > 9 ? "9+" : unreadCount}
+                </span>
+              )}
+            </PopoverTrigger>
+            <PopoverContent align="end" className="w-80 p-0">
+              <div className="flex items-center justify-between border-b px-4 py-3">
+                <p className="text-sm font-semibold">알림</p>
+                {unreadCount > 0 && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-auto p-0 text-xs text-muted-foreground hover:text-foreground"
+                    onClick={markAllNotificationsRead}
+                  >
+                    <CheckCheck size={14} className="mr-1" />
+                    모두 읽음
+                  </Button>
+                )}
+              </div>
+              <ScrollArea className="max-h-64">
+                {notifications.length === 0 ? (
+                  <p className="px-4 py-8 text-center text-sm text-muted-foreground">
+                    알림이 없습니다.
+                  </p>
+                ) : (
+                  <div className="divide-y">
+                    {notifications.map((n) => (
+                      <button
+                        key={n.id}
+                        className={cn(
+                          "w-full px-4 py-3 text-left text-sm transition-colors hover:bg-muted/50",
+                          !n.read && "bg-primary/5"
+                        )}
+                        onClick={() => markNotificationRead(n.id)}
+                      >
+                        <p className={cn("leading-snug", !n.read && "font-medium")}>
+                          {n.message}
+                        </p>
+                        <p className="mt-1 text-xs text-muted-foreground">
+                          {n.time}
+                        </p>
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </ScrollArea>
+            </PopoverContent>
+          </Popover>
 
           {user ? (
             <div className="flex items-center gap-3">

@@ -11,15 +11,6 @@ export interface Project {
   createdAt: string;
 }
 
-export interface ResumeProject {
-  id: number;
-  projectId: number;
-  title: string;
-  role: string;
-  period: string;
-  markdown: string;
-  summary?: string;
-}
 
 export const projects: Project[] = [
   {
@@ -258,48 +249,6 @@ export const projects: Project[] = [
   },
 ];
 
-export const myProjects: ResumeProject[] = [
-  {
-    id: 1,
-    projectId: 2,
-    title: "실시간 협업 화이트보드 서비스",
-    role: "프론트엔드 개발",
-    period: "2026.01 - 2026.03",
-    markdown: `## 프로젝트 개요
-WebSocket 기반의 실시간 협업 화이트보드 서비스 개발
-
-## 담당 업무
-- Canvas API를 활용한 드로잉 엔진 개발
-- Socket.io를 이용한 실시간 동기화 구현
-- 무한 캔버스 및 줌/팬 기능 구현
-- 실시간 커서 위치 공유 기능 개발
-
-## 기술적 성과
-- Canvas 렌더링 최적화로 60fps 유지
-- WebSocket 메시지 압축으로 네트워크 사용량 40% 절감
-- Undo/Redo 히스토리 관리 시스템 설계`,
-  },
-  {
-    id: 2,
-    projectId: 10,
-    title: "온라인 스터디 타이머 앱",
-    role: "풀스택 개발",
-    period: "2025.11 - 2026.02",
-    markdown: `## 프로젝트 개요
-친구들과 함께 공부 시간을 측정하고 서로 동기부여할 수 있는 소셜 스터디 앱
-
-## 담당 업무
-- React 기반 프론트엔드 개발
-- WebRTC를 활용한 실시간 캠 공유 기능
-- Node.js 백엔드 API 설계 및 개발
-- 타이머 동기화 로직 구현
-
-## 기술적 성과
-- WebRTC 시그널링 서버 최적화로 연결 시간 2초 이내 달성
-- 동시 접속자 100명 이상 처리 가능한 구조 설계
-- PWA 적용으로 모바일 사용성 확보`,
-  },
-];
 
 export const categories = [
   "전체",

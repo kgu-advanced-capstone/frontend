@@ -10,9 +10,10 @@ import type { Project } from "@/data/dummy";
 interface ProjectCardProps {
   project: Project;
   onJoin?: (id: number) => void;
+  joined?: boolean;
 }
 
-export default function ProjectCard({ project, onJoin }: ProjectCardProps) {
+export default function ProjectCard({ project, onJoin, joined }: ProjectCardProps) {
   const isFull = project.currentMembers >= project.maxMembers;
 
   return (
@@ -20,11 +21,15 @@ export default function ProjectCard({ project, onJoin }: ProjectCardProps) {
       <CardHeader className="pb-3">
         <div className="flex items-center justify-between">
           <Badge variant="secondary">{project.category}</Badge>
-          {isFull && (
+          {joined ? (
+            <Badge className="bg-primary/10 text-primary border-primary/20">
+              참여 중
+            </Badge>
+          ) : isFull ? (
             <Badge variant="outline" className="text-muted-foreground">
               마감
             </Badge>
-          )}
+          ) : null}
         </div>
         <Link href={`/projects/${project.id}`} className="group">
           <h3 className="mt-2 text-lg font-semibold leading-snug group-hover:text-primary transition-colors">
@@ -57,14 +62,20 @@ export default function ProjectCard({ project, onJoin }: ProjectCardProps) {
             ~{project.deadline}
           </span>
         </div>
-        <Button
-          size="sm"
-          onClick={() => onJoin?.(project.id)}
-          disabled={isFull}
-          variant={isFull ? "outline" : "default"}
-        >
-          {isFull ? "마감" : "참가"}
-        </Button>
+        {joined ? (
+          <Button size="sm" variant="outline" disabled>
+            참여 중
+          </Button>
+        ) : (
+          <Button
+            size="sm"
+            onClick={() => onJoin?.(project.id)}
+            disabled={isFull}
+            variant={isFull ? "outline" : "default"}
+          >
+            {isFull ? "마감" : "참가"}
+          </Button>
+        )}
       </CardFooter>
 
       <div className="px-6 pb-4">

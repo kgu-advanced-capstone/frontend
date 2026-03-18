@@ -1,62 +1,31 @@
 "use client";
 
-import { useState } from "react";
-import { Brain, Sparkles, FileText, Copy, Check } from "lucide-react";
+import Link from "next/link";
+import { FileText, ArrowRight, FolderOpen, Download } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
-import {
-  Tabs,
-  TabsContent,
-  TabsList,
-  TabsTrigger,
-} from "@/components/ui/tabs";
-import { myProjects, type ResumeProject } from "@/data/dummy";
-
-const aiSummaries: Record<number, string> = {
-  1: `**[실시간 협업 화이트보드 서비스] 프론트엔드 개발** (2026.01 - 2026.03)
-
-- WebSocket 기반 실시간 협업 화이트보드의 프론트엔드를 담당하여, Canvas API 드로잉 엔진과 Socket.io 실시간 동기화 시스템을 설계·구현
-- Canvas 렌더링 파이프라인 최적화를 통해 복잡한 드로잉 상황에서도 **60fps를 안정적으로 유지**, WebSocket 메시지 압축 적용으로 **네트워크 사용량 40% 절감**
-- 무한 캔버스(줌/팬), 실시간 커서 공유, Undo/Redo 히스토리 관리 등 핵심 인터랙션 기능을 독립적으로 설계하여 사용자 경험 향상에 기여`,
-
-  2: `**[온라인 스터디 타이머 앱] 풀스택 개발** (2025.11 - 2026.02)
-
-- 소셜 스터디 앱의 프론트엔드(React)와 백엔드(Node.js)를 모두 담당하여, WebRTC 기반 실시간 캠 공유 및 타이머 동기화 기능을 구현
-- WebRTC 시그널링 서버 최적화로 **P2P 연결 시간을 2초 이내로 단축**, 동시 접속자 100명 이상을 안정적으로 처리할 수 있는 서버 아키텍처 설계
-- PWA 기술 적용으로 모바일 환경에서의 접근성을 확보하고, 앱 설치 없이도 네이티브에 가까운 사용자 경험을 제공`,
-};
+import { useProjects } from "@/contexts/ProjectContext";
+import { useAuth } from "@/contexts/AuthContext";
+import { buttonVariants } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
+import { useState } from "react";
 
 export default function ResumePage() {
-  const [projectData, setProjectData] = useState<ResumeProject[]>(myProjects);
-  const [summaries, setSummaries] = useState<Record<number, string>>({});
-  const [loadingId, setLoadingId] = useState<number | null>(null);
-  const [copiedId, setCopiedId] = useState<number | null>(null);
+  const { joinedProjects } = useProjects();
+  const { user } = useAuth();
+  const summarized = joinedProjects.filter((jp) => jp.summary);
 
-  const handleMarkdownChange = (id: number, value: string) => {
-    setProjectData((prev) =>
-      prev.map((p) => (p.id === id ? { ...p, markdown: value } : p))
-    );
-  };
+  const [name, setName] = useState(user?.name || "");
+  const [position, setPosition] = useState("");
+  const [email, setEmail] = useState(user?.email || "");
+  const [intro, setIntro] = useState("");
 
-  const handleAiSummarize = async (id: number) => {
-    setLoadingId(id);
-    // Simulate AI processing
-    await new Promise((resolve) => setTimeout(resolve, 2000));
-    setSummaries((prev) => ({
-      ...prev,
-      [id]: aiSummaries[id] || "AI 요약 결과가 여기에 표시됩니다.",
-    }));
-    setLoadingId(null);
-  };
-
-  const handleCopy = async (text: string, id: number) => {
-    await navigator.clipboard.writeText(text);
-    setCopiedId(id);
-    setTimeout(() => setCopiedId(null), 2000);
-  };
+  const hasSummaries = summarized.length > 0;
 
   return (
     <div className="mx-auto max-w-5xl px-6 py-12">
@@ -68,187 +37,206 @@ export default function ResumePage() {
           <div>
             <h1 className="text-3xl font-bold">AI 이력서</h1>
             <p className="text-muted-foreground">
-              프로젝트 경험을 기록하고, AI가 이력서에 최적화된 형태로
-              정리해드립니다.
+              프로젝트 관리에서 작성한 AI 요약을 바탕으로 이력서를
+              완성하세요.
             </p>
           </div>
         </div>
       </div>
 
-      <Tabs defaultValue="projects" className="space-y-8">
-        <TabsList>
-          <TabsTrigger value="projects">참여 프로젝트</TabsTrigger>
-          <TabsTrigger value="preview">이력서 미리보기</TabsTrigger>
-        </TabsList>
-
-        {/* Projects Tab */}
-        <TabsContent value="projects" className="space-y-6">
-          {projectData.map((project) => (
-            <Card key={project.id}>
+      {!hasSummaries ? (
+        <Card>
+          <CardContent className="flex flex-col items-center justify-center py-20">
+            <FolderOpen
+              size={48}
+              className="text-muted-foreground/30 mb-4"
+            />
+            <p className="text-lg font-medium text-muted-foreground">
+              AI 요약된 프로젝트가 없습니다
+            </p>
+            <p className="mt-1 text-sm text-muted-foreground">
+              프로젝트 관리에서 경험을 기록하고 AI 요약을 먼저 진행해주세요.
+            </p>
+            <Link
+              href="/my-projects"
+              className={cn(buttonVariants(), "mt-6")}
+            >
+              프로젝트 관리로 이동
+              <ArrowRight size={16} className="ml-2" />
+            </Link>
+          </CardContent>
+        </Card>
+      ) : (
+        <div className="grid gap-8 lg:grid-cols-2">
+          {/* 입력 영역 */}
+          <div className="space-y-6">
+            <Card>
               <CardHeader>
-                <div className="flex items-start justify-between">
-                  <div>
-                    <CardTitle>{project.title}</CardTitle>
-                    <div className="mt-2 flex items-center gap-2">
-                      <Badge variant="secondary">{project.role}</Badge>
-                      <span className="text-sm text-muted-foreground">
-                        {project.period}
-                      </span>
-                    </div>
-                  </div>
-                  <Button
-                    onClick={() => handleAiSummarize(project.id)}
-                    disabled={loadingId === project.id}
-                    size="sm"
-                  >
-                    {loadingId === project.id ? (
-                      <>
-                        <div className="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-primary-foreground/30 border-t-primary-foreground" />
-                        요약 중...
-                      </>
-                    ) : (
-                      <>
-                        <Brain size={16} className="mr-2" />
-                        AI 요약
-                      </>
-                    )}
-                  </Button>
-                </div>
+                <CardTitle>기본 정보</CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div>
-                  <label className="mb-2 block text-sm font-medium">
-                    프로젝트 경험 기록 (마크다운)
-                  </label>
-                  <Textarea
-                    value={project.markdown}
-                    onChange={(e) =>
-                      handleMarkdownChange(project.id, e.target.value)
-                    }
-                    className="min-h-[200px] font-mono text-sm"
-                    placeholder="프로젝트에서 수행한 업무, 기술적 성과 등을 마크다운으로 기록하세요..."
+                  <Label className="mb-2 block">이름</Label>
+                  <Input
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                    placeholder="홍길동"
                   />
                 </div>
-
-                {summaries[project.id] && (
-                  <div className="rounded-lg border bg-primary/5 p-6">
-                    <div className="mb-3 flex items-center justify-between">
-                      <div className="flex items-center gap-2 text-sm font-medium text-primary">
-                        <Sparkles size={16} />
-                        AI 요약 결과
-                      </div>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() =>
-                          handleCopy(summaries[project.id], project.id)
-                        }
-                      >
-                        {copiedId === project.id ? (
-                          <>
-                            <Check size={14} className="mr-1" />
-                            복사됨
-                          </>
-                        ) : (
-                          <>
-                            <Copy size={14} className="mr-1" />
-                            복사
-                          </>
-                        )}
-                      </Button>
-                    </div>
-                    <div className="whitespace-pre-wrap text-sm leading-relaxed text-foreground">
-                      {summaries[project.id]}
-                    </div>
-                  </div>
-                )}
+                <div>
+                  <Label className="mb-2 block">지원 직무</Label>
+                  <Input
+                    value={position}
+                    onChange={(e) => setPosition(e.target.value)}
+                    placeholder="프론트엔드 개발자"
+                  />
+                </div>
+                <div>
+                  <Label className="mb-2 block">이메일</Label>
+                  <Input
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    placeholder="email@example.com"
+                  />
+                </div>
+                <div>
+                  <Label className="mb-2 block">자기소개</Label>
+                  <Textarea
+                    value={intro}
+                    onChange={(e) => setIntro(e.target.value)}
+                    className="min-h-[100px]"
+                    placeholder="간단한 자기소개를 작성해주세요..."
+                  />
+                </div>
               </CardContent>
             </Card>
-          ))}
-        </TabsContent>
 
-        {/* Preview Tab */}
-        <TabsContent value="preview">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <FileText size={20} />
-                이력서 미리보기
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-8">
-              <div>
-                <h2 className="text-xl font-bold">홍길동</h2>
-                <p className="text-muted-foreground">
-                  프론트엔드 개발자 · buildi@example.com
-                </p>
-              </div>
-
-              <Separator />
-
-              <div>
-                <h3 className="mb-4 text-lg font-semibold">자기소개</h3>
-                <p className="text-sm leading-relaxed text-muted-foreground">
-                  사용자 경험을 최우선으로 생각하는 프론트엔드 개발자입니다.
-                  실시간 협업 도구와 인터랙티브 웹 애플리케이션 개발에 관심이
-                  많으며, 성능 최적화와 클린 코드를 추구합니다.
-                </p>
-              </div>
-
-              <Separator />
-
-              <div>
-                <h3 className="mb-4 text-lg font-semibold">프로젝트 경험</h3>
-                <div className="space-y-6">
-                  {projectData.map((project) => (
-                    <div key={project.id}>
-                      <div className="flex items-center justify-between">
-                        <h4 className="font-semibold">{project.title}</h4>
-                        <span className="text-sm text-muted-foreground">
-                          {project.period}
-                        </span>
-                      </div>
-                      <p className="mt-1 text-sm text-primary">
-                        {project.role}
+            <Card>
+              <CardHeader>
+                <CardTitle>포함된 프로젝트 ({summarized.length})</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                {summarized.map((jp) => (
+                  <div
+                    key={jp.project.id}
+                    className="flex items-center justify-between rounded-lg border p-3"
+                  >
+                    <div>
+                      <p className="text-sm font-medium">
+                        {jp.project.title}
                       </p>
-                      <div className="mt-2 whitespace-pre-wrap text-sm leading-relaxed text-muted-foreground">
-                        {summaries[project.id] || (
-                          <span className="italic">
-                            AI 요약을 실행하면 이력서에 최적화된 내용이
-                            자동으로 반영됩니다.
-                          </span>
-                        )}
+                      <div className="mt-1 flex gap-1">
+                        {jp.project.skills.slice(0, 3).map((s) => (
+                          <Badge
+                            key={s}
+                            variant="outline"
+                            className="text-[10px]"
+                          >
+                            {s}
+                          </Badge>
+                        ))}
                       </div>
                     </div>
-                  ))}
-                </div>
-              </div>
-
-              <Separator />
-
-              <div>
-                <h3 className="mb-4 text-lg font-semibold">기술 스택</h3>
-                <div className="flex flex-wrap gap-2">
-                  {[
-                    "React",
-                    "Next.js",
-                    "TypeScript",
-                    "Node.js",
-                    "WebSocket",
-                    "WebRTC",
-                    "Canvas API",
-                    "Tailwind CSS",
-                  ].map((skill) => (
-                    <Badge key={skill} variant="secondary">
-                      {skill}
+                    <Badge className="bg-green-500/10 text-green-600 border-green-500/20 text-[10px]">
+                      요약 완료
                     </Badge>
-                  ))}
+                  </div>
+                ))}
+                <p className="text-xs text-muted-foreground">
+                  프로젝트 관리에서 AI 요약을 완료한 프로젝트만 이력서에
+                  포함됩니다.
+                </p>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* 미리보기 */}
+          <div>
+            <Card className="sticky top-20">
+              <CardHeader className="flex flex-row items-center justify-between">
+                <CardTitle className="flex items-center gap-2">
+                  <FileText size={18} />
+                  이력서 미리보기
+                </CardTitle>
+                <Button variant="outline" size="sm">
+                  <Download size={14} className="mr-1" />
+                  PDF (데모)
+                </Button>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                <div>
+                  <h2 className="text-xl font-bold">
+                    {name || "이름을 입력하세요"}
+                  </h2>
+                  <p className="text-sm text-muted-foreground">
+                    {[position, email].filter(Boolean).join(" · ") ||
+                      "직무 · 이메일"}
+                  </p>
                 </div>
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
-      </Tabs>
+
+                {intro && (
+                  <>
+                    <Separator />
+                    <div>
+                      <h3 className="mb-2 text-sm font-semibold uppercase tracking-wider text-muted-foreground">
+                        자기소개
+                      </h3>
+                      <p className="text-sm leading-relaxed">{intro}</p>
+                    </div>
+                  </>
+                )}
+
+                <Separator />
+
+                <div>
+                  <h3 className="mb-4 text-sm font-semibold uppercase tracking-wider text-muted-foreground">
+                    프로젝트 경험
+                  </h3>
+                  <div className="space-y-5">
+                    {summarized.map((jp) => (
+                      <div key={jp.project.id}>
+                        <div className="whitespace-pre-wrap text-sm leading-relaxed">
+                          {jp.summary}
+                        </div>
+                        <div className="mt-2 flex gap-1">
+                          {jp.project.skills.map((s) => (
+                            <Badge
+                              key={s}
+                              variant="secondary"
+                              className="text-[10px]"
+                            >
+                              {s}
+                            </Badge>
+                          ))}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                <Separator />
+
+                <div>
+                  <h3 className="mb-2 text-sm font-semibold uppercase tracking-wider text-muted-foreground">
+                    기술 스택
+                  </h3>
+                  <div className="flex flex-wrap gap-1.5">
+                    {[
+                      ...new Set(
+                        summarized.flatMap((jp) => jp.project.skills)
+                      ),
+                    ].map((skill) => (
+                      <Badge key={skill} variant="secondary">
+                        {skill}
+                      </Badge>
+                    ))}
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

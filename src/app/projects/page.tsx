@@ -15,6 +15,7 @@ import {
 } from "@/components/ui/dialog";
 import ProjectCard from "@/components/ProjectCard";
 import { projects as allProjects, categories } from "@/data/dummy";
+import { useProjects } from "@/contexts/ProjectContext";
 
 const PAGE_SIZE = 6;
 
@@ -22,9 +23,9 @@ export default function ProjectsPage() {
   const [category, setCategory] = useState("전체");
   const [search, setSearch] = useState("");
   const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
-  const [joinedIds, setJoinedIds] = useState<Set<number>>(new Set());
   const [joinedProject, setJoinedProject] = useState<string | null>(null);
   const loaderRef = useRef<HTMLDivElement>(null);
+  const { joinProject, isJoined } = useProjects();
 
   const filtered = allProjects.filter((p) => {
     const matchCategory = category === "전체" || p.category === category;
@@ -64,7 +65,7 @@ export default function ProjectsPage() {
 
   const handleJoin = (id: number) => {
     const project = allProjects.find((p) => p.id === id);
-    setJoinedIds((prev) => new Set(prev).add(id));
+    joinProject(id);
     setJoinedProject(project?.title ?? "프로젝트");
   };
 
@@ -124,7 +125,7 @@ export default function ProjectsPage() {
             <ProjectCard
               key={project.id}
               project={
-                joinedIds.has(project.id)
+                isJoined(project.id)
                   ? {
                       ...project,
                       currentMembers: Math.min(
@@ -135,6 +136,7 @@ export default function ProjectsPage() {
                   : project
               }
               onJoin={handleJoin}
+              joined={isJoined(project.id)}
             />
           ))}
         </div>
@@ -152,7 +154,6 @@ export default function ProjectsPage() {
         </p>
       )}
 
-      {/* 참가 완료 모달 */}
       <Dialog
         open={joinedProject !== null}
         onOpenChange={(open) => {

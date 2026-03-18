@@ -1,14 +1,24 @@
 "use client";
 
-import { use, useState } from "react";
+import { use } from "react";
 import Link from "next/link";
-import { ArrowLeft, Users, Calendar, User } from "lucide-react";
+import { ArrowLeft, Users, Calendar, User, CheckCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from "@/components/ui/dialog";
 import { projects } from "@/data/dummy";
+import { useProjects } from "@/contexts/ProjectContext";
+import { useState } from "react";
 
 const memberNames = ["김지현", "박서준", "이수민", "정민우", "한소희", "오태현"];
 
@@ -19,7 +29,8 @@ export default function ProjectDetailPage({
 }) {
   const { id } = use(params);
   const project = projects.find((p) => p.id === Number(id));
-  const [joined, setJoined] = useState(false);
+  const { isJoined, joinProject, leaveProject } = useProjects();
+  const [showJoinModal, setShowJoinModal] = useState(false);
 
   if (!project) {
     return (
@@ -29,12 +40,18 @@ export default function ProjectDetailPage({
     );
   }
 
+  const joined = isJoined(project.id);
   const isFull =
     project.currentMembers + (joined ? 1 : 0) >= project.maxMembers;
   const members = memberNames.slice(
     0,
     project.currentMembers + (joined ? 1 : 0)
   );
+
+  const handleJoin = () => {
+    joinProject(project.id);
+    setShowJoinModal(true);
+  };
 
   return (
     <div className="mx-auto max-w-4xl px-6 py-12">
@@ -56,14 +73,23 @@ export default function ProjectDetailPage({
             {project.author} · {project.createdAt}
           </p>
         </div>
-        <Button
-          size="lg"
-          disabled={isFull && !joined}
-          variant={joined ? "outline" : "default"}
-          onClick={() => setJoined(!joined)}
-        >
-          {joined ? "참가 취소" : isFull ? "마감" : "프로젝트 참가"}
-        </Button>
+        {joined ? (
+          <Button
+            size="lg"
+            variant="outline"
+            onClick={() => leaveProject(project.id)}
+          >
+            참가 취소
+          </Button>
+        ) : (
+          <Button
+            size="lg"
+            disabled={isFull}
+            onClick={handleJoin}
+          >
+            {isFull ? "마감" : "프로젝트 참가"}
+          </Button>
+        )}
       </div>
 
       <Separator className="my-8" />
@@ -155,6 +181,26 @@ export default function ProjectDetailPage({
           </Card>
         </div>
       </div>
+
+      <Dialog open={showJoinModal} onOpenChange={setShowJoinModal}>
+        <DialogContent>
+          <DialogHeader>
+            <div className="mx-auto mb-2 flex h-12 w-12 items-center justify-center rounded-full bg-primary/10">
+              <CheckCircle size={24} className="text-primary" />
+            </div>
+            <DialogTitle className="text-center">참가 신청 완료</DialogTitle>
+            <DialogDescription className="text-center">
+              <strong>{project.title}</strong>에 참가 신청이
+              완료되었습니다. 프로젝트 관리에서 경험을 기록해보세요.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button className="w-full" onClick={() => setShowJoinModal(false)}>
+              확인
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
