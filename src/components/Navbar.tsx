@@ -5,8 +5,10 @@ import { usePathname } from "next/navigation";
 import { Menu, X, LogOut, User } from "lucide-react";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
+import { buttonVariants } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { useAuth } from "@/contexts/AuthContext";
+import { cn } from "@/lib/utils";
 
 const navLinks = [
   { href: "/projects", label: "프로젝트 매칭" },
@@ -55,9 +57,12 @@ export default function Navbar() {
               </Button>
             </div>
           ) : (
-            <Button size="sm" render={<Link href="/login" />}>
+            <Link
+              href="/login"
+              className={cn(buttonVariants({ size: "sm" }))}
+            >
               로그인
-            </Button>
+            </Link>
           )}
         </div>
 
@@ -101,13 +106,13 @@ export default function Navbar() {
               </Button>
             </div>
           ) : (
-            <Button
-              className="mt-2 w-full"
-              size="sm"
-              render={<Link href="/login" onClick={() => setMobileOpen(false)} />}
+            <Link
+              href="/login"
+              onClick={() => setMobileOpen(false)}
+              className={cn(buttonVariants({ size: "sm" }), "mt-2 w-full")}
             >
               로그인
-            </Button>
+            </Link>
           )}
         </div>
       )}

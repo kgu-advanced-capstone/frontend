@@ -1,9 +1,18 @@
 "use client";
 
 import { useState, useEffect, useRef, useCallback } from "react";
-import { Search } from "lucide-react";
+import { Search, CheckCircle } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from "@/components/ui/dialog";
 import ProjectCard from "@/components/ProjectCard";
 import { projects as allProjects, categories } from "@/data/dummy";
 
@@ -14,6 +23,7 @@ export default function ProjectsPage() {
   const [search, setSearch] = useState("");
   const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
   const [joinedIds, setJoinedIds] = useState<Set<number>>(new Set());
+  const [joinedProject, setJoinedProject] = useState<string | null>(null);
   const loaderRef = useRef<HTMLDivElement>(null);
 
   const filtered = allProjects.filter((p) => {
@@ -53,8 +63,9 @@ export default function ProjectsPage() {
   }, [loadMore]);
 
   const handleJoin = (id: number) => {
+    const project = allProjects.find((p) => p.id === id);
     setJoinedIds((prev) => new Set(prev).add(id));
-    alert("참가 신청이 완료되었습니다! (데모)");
+    setJoinedProject(project?.title ?? "프로젝트");
   };
 
   return (
@@ -140,6 +151,35 @@ export default function ProjectsPage() {
           모든 프로젝트를 불러왔습니다.
         </p>
       )}
+
+      {/* 참가 완료 모달 */}
+      <Dialog
+        open={joinedProject !== null}
+        onOpenChange={(open) => {
+          if (!open) setJoinedProject(null);
+        }}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <div className="mx-auto mb-2 flex h-12 w-12 items-center justify-center rounded-full bg-primary/10">
+              <CheckCircle size={24} className="text-primary" />
+            </div>
+            <DialogTitle className="text-center">참가 신청 완료</DialogTitle>
+            <DialogDescription className="text-center">
+              <strong>{joinedProject}</strong>에 참가 신청이
+              완료되었습니다. 팀장이 승인하면 알림을 보내드립니다.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button
+              className="w-full"
+              onClick={() => setJoinedProject(null)}
+            >
+              확인
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
