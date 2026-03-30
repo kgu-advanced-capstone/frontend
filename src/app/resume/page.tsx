@@ -1,31 +1,35 @@
 "use client";
 
 import Link from "next/link";
-import { FileText, ArrowRight, FolderOpen, Download } from "lucide-react";
+import { FileText, ArrowRight, FolderOpen, Download, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
-import { useProjects } from "@/contexts/ProjectContext";
-import { useAuth } from "@/contexts/AuthContext";
 import { buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import { useState } from "react";
+import { useResume, useGenerateResume } from "@/api/hooks/useResume";
+import { useProfile } from "@/api/hooks/useProfile";
 
 export default function ResumePage() {
-  const { joinedProjects } = useProjects();
-  const { user } = useAuth();
-  const summarized = joinedProjects.filter((jp) => jp.summary);
+  const { data: resume, isLoading } = useResume();
+  const { data: profile } = useProfile();
+  const generateMutation = useGenerateResume();
 
-  const [name, setName] = useState(user?.name || "");
-  const [position, setPosition] = useState("");
-  const [email, setEmail] = useState(user?.email || "");
-  const [intro, setIntro] = useState("");
+  const hasSummaries =
+    resume && resume.summarizedExperiences && resume.summarizedExperiences.length > 0;
 
-  const hasSummaries = summarized.length > 0;
+  const handleGenerate = () => {
+    generateMutation.mutate();
+  };
+
+  if (isLoading) {
+    return (
+      <div className="flex min-h-[60vh] items-center justify-center">
+        <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary/20 border-t-primary" />
+      </div>
+    );
+  }
 
   return (
     <div className="mx-auto max-w-5xl px-6 py-12">
@@ -37,20 +41,40 @@ export default function ResumePage() {
           <div>
             <h1 className="text-3xl font-bold">AI 이력서</h1>
             <p className="text-muted-foreground">
-              프로젝트 관리에서 작성한 AI 요약을 바탕으로 이력서를
-              완성하세요.
+              프로젝트 관리에서 작성한 AI 요약을 바탕으로 이력서를 완성하세요.
             </p>
           </div>
         </div>
       </div>
 
+      {/* 이력서 생성 버튼 */}
+      <div className="mb-8">
+        <Button
+          onClick={handleGenerate}
+          disabled={generateMutation.isPending}
+          size="lg"
+        >
+          {generateMutation.isPending ? (
+            <>
+              <Loader2 size={16} className="mr-2 animate-spin" />
+              이력서 생성 중...
+            </>
+          ) : (
+            <>
+              <FileText size={16} className="mr-2" />
+              AI 이력서 생성
+            </>
+          )}
+        </Button>
+        {generateMutation.isSuccess && (
+          <span className="ml-3 text-sm text-green-600">이력서가 생성되었습니다!</span>
+        )}
+      </div>
+
       {!hasSummaries ? (
         <Card>
           <CardContent className="flex flex-col items-center justify-center py-20">
-            <FolderOpen
-              size={48}
-              className="text-muted-foreground/30 mb-4"
-            />
+            <FolderOpen size={48} className="text-muted-foreground/30 mb-4" />
             <p className="text-lg font-medium text-muted-foreground">
               AI 요약된 프로젝트가 없습니다
             </p>
@@ -68,71 +92,62 @@ export default function ResumePage() {
         </Card>
       ) : (
         <div className="grid gap-8 lg:grid-cols-2">
-          {/* 입력 영역 */}
+          {/* 포함된 프로젝트 목록 */}
           <div className="space-y-6">
             <Card>
               <CardHeader>
                 <CardTitle>기본 정보</CardTitle>
               </CardHeader>
-              <CardContent className="space-y-4">
-                <div>
-                  <Label className="mb-2 block">이름</Label>
-                  <Input
-                    value={name}
-                    onChange={(e) => setName(e.target.value)}
-                    placeholder="홍길동"
-                  />
-                </div>
-                <div>
-                  <Label className="mb-2 block">지원 직무</Label>
-                  <Input
-                    value={position}
-                    onChange={(e) => setPosition(e.target.value)}
-                    placeholder="프론트엔드 개발자"
-                  />
-                </div>
-                <div>
-                  <Label className="mb-2 block">이메일</Label>
-                  <Input
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    placeholder="email@example.com"
-                  />
-                </div>
-                <div>
-                  <Label className="mb-2 block">자기소개</Label>
-                  <Textarea
-                    value={intro}
-                    onChange={(e) => setIntro(e.target.value)}
-                    className="min-h-[100px]"
-                    placeholder="간단한 자기소개를 작성해주세요..."
-                  />
+              <CardContent className="space-y-3">
+                <div className="grid grid-cols-2 gap-4 text-sm">
+                  <div>
+                    <span className="text-muted-foreground">이름</span>
+                    <p className="font-medium">{resume.basicInfo.name}</p>
+                  </div>
+                  <div>
+                    <span className="text-muted-foreground">이메일</span>
+                    <p className="font-medium">{resume.basicInfo.email}</p>
+                  </div>
+                  {resume.basicInfo.phone && (
+                    <div>
+                      <span className="text-muted-foreground">전화</span>
+                      <p className="font-medium">{resume.basicInfo.phone}</p>
+                    </div>
+                  )}
+                  {resume.basicInfo.github && (
+                    <div>
+                      <span className="text-muted-foreground">GitHub</span>
+                      <p className="font-medium">{resume.basicInfo.github}</p>
+                    </div>
+                  )}
+                  {resume.basicInfo.blog && (
+                    <div>
+                      <span className="text-muted-foreground">블로그</span>
+                      <p className="font-medium">{resume.basicInfo.blog}</p>
+                    </div>
+                  )}
                 </div>
               </CardContent>
             </Card>
 
             <Card>
               <CardHeader>
-                <CardTitle>포함된 프로젝트 ({summarized.length})</CardTitle>
+                <CardTitle>
+                  포함된 프로젝트 ({resume.summarizedExperiences.length})
+                </CardTitle>
               </CardHeader>
               <CardContent className="space-y-3">
-                {summarized.map((jp) => (
+                {resume.summarizedExperiences.map((exp) => (
                   <div
-                    key={jp.project.id}
+                    key={exp.projectId}
                     className="flex items-center justify-between rounded-lg border p-3"
                   >
                     <div>
-                      <p className="text-sm font-medium">
-                        {jp.project.title}
-                      </p>
+                      <p className="text-sm font-medium">{exp.projectTitle}</p>
                       <div className="mt-1 flex gap-1">
-                        {jp.project.skills.slice(0, 3).map((s) => (
-                          <Badge
-                            key={s}
-                            variant="outline"
-                            className="text-[10px]"
-                          >
-                            {s}
+                        {exp.keyPoints.slice(0, 2).map((kp, i) => (
+                          <Badge key={i} variant="outline" className="text-[10px]">
+                            {kp.slice(0, 30)}...
                           </Badge>
                         ))}
                       </div>
@@ -142,10 +157,6 @@ export default function ResumePage() {
                     </Badge>
                   </div>
                 ))}
-                <p className="text-xs text-muted-foreground">
-                  프로젝트 관리에서 AI 요약을 완료한 프로젝트만 이력서에
-                  포함됩니다.
-                </p>
               </CardContent>
             </Card>
           </div>
@@ -166,25 +177,21 @@ export default function ResumePage() {
               <CardContent className="space-y-6">
                 <div>
                   <h2 className="text-xl font-bold">
-                    {name || "이름을 입력하세요"}
+                    {resume.basicInfo.name || "이름"}
                   </h2>
                   <p className="text-sm text-muted-foreground">
-                    {[position, email].filter(Boolean).join(" · ") ||
-                      "직무 · 이메일"}
+                    {[resume.basicInfo.email, resume.basicInfo.phone]
+                      .filter(Boolean)
+                      .join(" · ")}
                   </p>
+                  {(resume.basicInfo.github || resume.basicInfo.blog) && (
+                    <p className="text-sm text-muted-foreground">
+                      {[resume.basicInfo.github, resume.basicInfo.blog]
+                        .filter(Boolean)
+                        .join(" · ")}
+                    </p>
+                  )}
                 </div>
-
-                {intro && (
-                  <>
-                    <Separator />
-                    <div>
-                      <h3 className="mb-2 text-sm font-semibold uppercase tracking-wider text-muted-foreground">
-                        자기소개
-                      </h3>
-                      <p className="text-sm leading-relaxed">{intro}</p>
-                    </div>
-                  </>
-                )}
 
                 <Separator />
 
@@ -193,22 +200,16 @@ export default function ResumePage() {
                     프로젝트 경험
                   </h3>
                   <div className="space-y-5">
-                    {summarized.map((jp) => (
-                      <div key={jp.project.id}>
-                        <div className="whitespace-pre-wrap text-sm leading-relaxed">
-                          {jp.summary}
-                        </div>
-                        <div className="mt-2 flex gap-1">
-                          {jp.project.skills.map((s) => (
-                            <Badge
-                              key={s}
-                              variant="secondary"
-                              className="text-[10px]"
-                            >
-                              {s}
-                            </Badge>
+                    {resume.summarizedExperiences.map((exp) => (
+                      <div key={exp.projectId}>
+                        <p className="font-medium">{exp.projectTitle}</p>
+                        <ul className="mt-1 space-y-1">
+                          {exp.keyPoints.map((kp, i) => (
+                            <li key={i} className="text-sm text-muted-foreground">
+                              - {kp}
+                            </li>
                           ))}
-                        </div>
+                        </ul>
                       </div>
                     ))}
                   </div>
@@ -223,15 +224,26 @@ export default function ResumePage() {
                   <div className="flex flex-wrap gap-1.5">
                     {[
                       ...new Set(
-                        summarized.flatMap((jp) => jp.project.skills)
+                        resume.summarizedExperiences.flatMap((e) => e.keyPoints)
                       ),
-                    ].map((skill) => (
-                      <Badge key={skill} variant="secondary">
-                        {skill}
-                      </Badge>
-                    ))}
+                    ]
+                      .slice(0, 10)
+                      .map((skill, i) => (
+                        <Badge key={i} variant="secondary">
+                          {skill.slice(0, 20)}
+                        </Badge>
+                      ))}
                   </div>
                 </div>
+
+                {resume.generatedAt && (
+                  <>
+                    <Separator />
+                    <p className="text-xs text-muted-foreground">
+                      생성일: {new Date(resume.generatedAt).toLocaleDateString("ko-KR")}
+                    </p>
+                  </>
+                )}
               </CardContent>
             </Card>
           </div>

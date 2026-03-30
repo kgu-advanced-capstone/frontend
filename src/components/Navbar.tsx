@@ -14,7 +14,7 @@ import {
 } from "@/components/ui/popover";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useAuth } from "@/contexts/AuthContext";
-import { useProjects } from "@/contexts/ProjectContext";
+import { useNotifications, useMarkAsRead, useMarkAllAsRead } from "@/api/hooks/useNotifications";
 import { cn } from "@/lib/utils";
 
 const navLinks = [
@@ -26,9 +26,12 @@ const navLinks = [
 export default function Navbar() {
   const pathname = usePathname();
   const { user, logout } = useAuth();
-  const { notifications, unreadCount, markNotificationRead, markAllNotificationsRead } =
-    useProjects();
+  const { data: notifications = [] } = useNotifications();
+  const markAsRead = useMarkAsRead();
+  const markAllAsRead = useMarkAllAsRead();
   const [mobileOpen, setMobileOpen] = useState(false);
+
+  const unreadCount = notifications.filter((n) => !n.read).length;
 
   return (
     <nav className="fixed top-0 z-50 w-full border-b bg-background/80 backdrop-blur-md">
@@ -70,7 +73,7 @@ export default function Navbar() {
                     variant="ghost"
                     size="sm"
                     className="h-auto p-0 text-xs text-muted-foreground hover:text-foreground"
-                    onClick={markAllNotificationsRead}
+                    onClick={() => markAllAsRead.mutate()}
                   >
                     <CheckCheck size={14} className="mr-1" />
                     모두 읽음
@@ -91,7 +94,7 @@ export default function Navbar() {
                           "w-full px-4 py-3 text-left text-sm transition-colors hover:bg-muted/50",
                           !n.read && "bg-primary/5"
                         )}
-                        onClick={() => markNotificationRead(n.id)}
+                        onClick={() => markAsRead.mutate(n.id)}
                       >
                         <p className={cn("leading-snug", !n.read && "font-medium")}>
                           {n.message}
@@ -122,12 +125,20 @@ export default function Navbar() {
               </Button>
             </div>
           ) : (
-            <Link
-              href="/login"
-              className={cn(buttonVariants({ size: "sm" }))}
-            >
-              로그인
-            </Link>
+            <div className="flex items-center gap-3">
+              <Link
+                href="/login"
+                className={cn(buttonVariants({ variant: "ghost", size: "sm" }))}
+              >
+                로그인
+              </Link>
+              <Link
+                href="/register"
+                className={cn(buttonVariants({ size: "sm" }))}
+              >
+                회원가입
+              </Link>
+            </div>
           )}
         </div>
 
@@ -171,13 +182,22 @@ export default function Navbar() {
               </Button>
             </div>
           ) : (
-            <Link
-              href="/login"
-              onClick={() => setMobileOpen(false)}
-              className={cn(buttonVariants({ size: "sm" }), "mt-2 w-full")}
-            >
-              로그인
-            </Link>
+            <div className="mt-4 grid grid-cols-2 gap-3">
+              <Link
+                href="/login"
+                onClick={() => setMobileOpen(false)}
+                className={cn(buttonVariants({ variant: "outline", size: "sm" }))}
+              >
+                로그인
+              </Link>
+              <Link
+                href="/register"
+                onClick={() => setMobileOpen(false)}
+                className={cn(buttonVariants({ size: "sm" }))}
+              >
+                회원가입
+              </Link>
+            </div>
           )}
         </div>
       )}

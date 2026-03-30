@@ -1,8 +1,7 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useState } from "react";
 import Link from "next/link";
-import Image from "next/image";
 import {
   Brain,
   Sparkles,
@@ -11,8 +10,6 @@ import {
   Check,
   ArrowRight,
   Plus,
-  ImagePlus,
-  X,
   Save,
   Pencil,
   Users,
@@ -35,76 +32,20 @@ import {
   DialogDescription,
   DialogFooter,
 } from "@/components/ui/dialog";
-import { useProjects, type ProjectStatus } from "@/contexts/ProjectContext";
 import { buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { categories } from "@/data/dummy";
-
-interface ProjectRecord {
-  role: string;
-  background: string;
-  tasks: string;
-  techStack: string;
-  achievements: string;
-  troubleshooting: string;
-  learned: string;
-  images: string[];
-}
-
-function generateAiSummary(
-  title: string,
-  record: ProjectRecord
-): string {
-  const role = record.role || "개발";
-  const parts: string[] = [];
-
-  if (record.background.trim()) {
-    parts.push(record.background.trim().split("\n")[0]);
-  }
-
-  const taskLines = record.tasks
-    .split("\n")
-    .filter((l) => l.trim())
-    .slice(0, 3)
-    .map((l) => l.trim().replace(/^-\s*/, ""));
-
-  const achieveLines = record.achievements
-    .split("\n")
-    .filter((l) => l.trim())
-    .slice(0, 2)
-    .map((l) => l.trim().replace(/^-\s*/, ""));
-
-  const bullets: string[] = [];
-  if (parts.length > 0) {
-    bullets.push(`${parts[0]}를 위한 프로젝트에서 ${role}로 참여`);
-  } else {
-    bullets.push(`프로젝트에서 ${role} 역할 수행`);
-  }
-  taskLines.forEach((t) => bullets.push(t));
-  achieveLines.forEach((a) => bullets.push(a));
-
-  return `**[${title}] ${role}**\n\n${bullets.map((b) => `- ${b}`).join("\n")}`;
-}
-
-const defaultCreateForm = {
-  title: "",
-  description: "",
-  skills: "",
-  maxMembers: "4",
-  deadline: "",
-  category: "웹",
-};
-
-const emptyRecord: ProjectRecord = {
-  role: "",
-  background: "",
-  tasks: "",
-  techStack: "",
-  achievements: "",
-  troubleshooting: "",
-  learned: "",
-  images: [],
-};
+import type { ProjectStatus } from "@/api/types";
+import {
+  useMyProjects,
+  useCreateProject,
+  useUpdateProjectStatus,
+} from "@/api/hooks/useProjects";
+import {
+  useExperiences,
+  useUpsertExperience,
+  useSummarizeExperience,
+} from "@/api/hooks/useExperiences";
 
 const statusConfig: Record<ProjectStatus, { label: string; color: string; icon: typeof Clock }> = {
   recruiting: {
@@ -124,124 +65,230 @@ const statusConfig: Record<ProjectStatus, { label: string; color: string; icon: 
   },
 };
 
-export default function MyProjectsPage() {
-  const {
-    joinedProjects,
-    createdProjects,
-    updateMarkdown,
-    updateSummary,
-    changeStatus,
-    createProject,
-  } = useProjects();
+const nextStatus: Record<ProjectStatus, ProjectStatus | null> = {
+  recruiting: "in-progress",
+  "in-progress": "completed",
+  completed: null,
+};
 
-  const [loadingId, setLoadingId] = useState<number | null>(null);
-  const [copiedId, setCopiedId] = useState<number | null>(null);
-  const [savedId, setSavedId] = useState<number | null>(null);
-  const [editingIds, setEditingIds] = useState<Set<number>>(new Set());
-  const [editDrafts, setEditDrafts] = useState<Record<number, string>>({});
-  const [records, setRecords] = useState<Record<number, ProjectRecord>>({});
+const nextStatusLabel: Record<ProjectStatus, string> = {
+  recruiting: "진행으로 변경",
+  "in-progress": "완료로 변경",
+  completed: "",
+};
+
+const defaultCreateForm = {
+  title: "",
+  description: "",
+  skills: "",
+  maxMembers: "4",
+  deadline: "",
+  category: "웹",
+};
+
+/** 개별 프로젝트의 경험 기록 섹션 */
+function ExperienceSection({ projectId }: { projectId: number }) {
+  const { data: experiences = [] } = useExperiences(projectId);
+  const upsertMutation = useUpsertExperience(projectId);
+  const summarizeMutation = useSummarizeExperience();
+
+  const existing = experiences[0];
+  const [content, setContent] = useState(existing?.content ?? "");
+  const [isEditing, setIsEditing] = useState(false);
+  const [editDraft, setEditDraft] = useState("");
+  const [copiedId, setCopiedId] = useState(false);
+  const [savedSummary, setSavedSummary] = useState(false);
+
+  // 경험 내용이 로드되면 content 동기화
+  const currentContent = existing?.content ?? "";
+  if (currentContent && !content && !upsertMutation.isSuccess) {
+    setContent(currentContent);
+  }
+
+  const handleSaveExperience = () => {
+    if (!content.trim()) return;
+    upsertMutation.mutate({ content });
+  };
+
+  const handleSummarize = () => {
+    if (!existing) return;
+    summarizeMutation.mutate(existing.id);
+  };
+
+  const handleCopy = async (text: string) => {
+    await navigator.clipboard.writeText(text);
+    setCopiedId(true);
+    setTimeout(() => setCopiedId(false), 2000);
+  };
+
+  return (
+    <div className="space-y-5">
+      {/* 경험 기록 입력 */}
+      <div>
+        <Label className="mb-2 block">경험 기록 *</Label>
+        <Textarea
+          value={content}
+          onChange={(e) => setContent(e.target.value)}
+          className="min-h-[200px]"
+          placeholder={`담당 역할, 주요 업무, 기술 스택, 성과 등을 자유롭게 기록하세요.\n\n예시:\n- 역할: 프론트엔드 개발\n- React 컴포넌트 설계 및 API 연동\n- API 응답 시간 75% 개선\n- 테스트 커버리지 85% 달성`}
+        />
+        <div className="mt-2 flex items-center gap-2">
+          <Button
+            size="sm"
+            onClick={handleSaveExperience}
+            disabled={!content.trim() || upsertMutation.isPending}
+          >
+            {upsertMutation.isPending ? "저장 중..." : "경험 저장"}
+          </Button>
+          {upsertMutation.isSuccess && (
+            <span className="text-xs text-green-600 flex items-center gap-1">
+              <Check size={12} /> 저장됨
+            </span>
+          )}
+        </div>
+      </div>
+
+      <Separator />
+
+      {/* AI 요약 버튼 */}
+      <div className="flex items-center gap-3">
+        <Button
+          onClick={handleSummarize}
+          disabled={!existing || summarizeMutation.isPending}
+        >
+          {summarizeMutation.isPending ? (
+            <>
+              <div className="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-primary-foreground/30 border-t-primary-foreground" />
+              요약 중...
+            </>
+          ) : (
+            <>
+              <Brain size={16} className="mr-2" />
+              AI 요약
+            </>
+          )}
+        </Button>
+        {!existing && (
+          <span className="text-xs text-muted-foreground">
+            경험을 먼저 저장해야 AI 요약이 가능합니다
+          </span>
+        )}
+      </div>
+
+      {/* AI 요약 결과 */}
+      {(existing?.aiSummary || summarizeMutation.data?.aiSummary) && (
+        <div className="rounded-lg border bg-primary/5 p-6">
+          <div className="mb-3 flex items-center justify-between">
+            <div className="flex items-center gap-2 text-sm font-medium text-primary">
+              <Sparkles size={16} />
+              AI 요약 결과
+            </div>
+            <div className="flex items-center gap-1">
+              {isEditing ? (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => {
+                    // 첨삭 저장 — 수정된 내용을 경험으로 다시 저장
+                    upsertMutation.mutate({ content: editDraft });
+                    setIsEditing(false);
+                    setSavedSummary(true);
+                    setTimeout(() => setSavedSummary(false), 2000);
+                  }}
+                >
+                  <Save size={14} className="mr-1" />
+                  저장
+                </Button>
+              ) : (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => {
+                    setEditDraft(
+                      summarizeMutation.data?.aiSummary ?? existing?.aiSummary ?? ""
+                    );
+                    setIsEditing(true);
+                  }}
+                >
+                  <Pencil size={14} className="mr-1" />
+                  첨삭
+                </Button>
+              )}
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() =>
+                  handleCopy(
+                    summarizeMutation.data?.aiSummary ?? existing?.aiSummary ?? ""
+                  )
+                }
+              >
+                {copiedId ? (
+                  <>
+                    <Check size={14} className="mr-1" />
+                    복사됨
+                  </>
+                ) : (
+                  <>
+                    <Copy size={14} className="mr-1" />
+                    복사
+                  </>
+                )}
+              </Button>
+            </div>
+          </div>
+          {isEditing ? (
+            <Textarea
+              value={editDraft}
+              onChange={(e) => setEditDraft(e.target.value)}
+              className="min-h-[150px] font-mono text-sm bg-white"
+            />
+          ) : (
+            <div className="whitespace-pre-wrap text-sm leading-relaxed">
+              {summarizeMutation.data?.aiSummary ?? existing?.aiSummary}
+              {savedSummary && (
+                <p className="mt-3 flex items-center gap-1 text-xs text-green-600">
+                  <Check size={12} />
+                  저장되었습니다
+                </p>
+              )}
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+export default function MyProjectsPage() {
+  const { data: myProjects = [], isLoading } = useMyProjects();
+  const createMutation = useCreateProject();
+  const statusMutation = useUpdateProjectStatus();
+
   const [showCreate, setShowCreate] = useState(false);
   const [createForm, setCreateForm] = useState(defaultCreateForm);
-  const fileInputRef = useRef<HTMLInputElement>(null);
-  const [activeImageProjectId, setActiveImageProjectId] = useState<number | null>(null);
-
-  const myCreatedIds = new Set(createdProjects.map((p) => p.id));
-
-  const getRecord = (id: number): ProjectRecord => records[id] || emptyRecord;
-
-  const updateRecord = (id: number, field: keyof ProjectRecord, value: string | string[]) => {
-    setRecords((prev) => ({
-      ...prev,
-      [id]: { ...(prev[id] || emptyRecord), [field]: value },
-    }));
-    const rec = { ...(records[id] || emptyRecord), [field]: value };
-    const md = [
-      rec.role && `역할: ${rec.role}`,
-      rec.background && `## 프로젝트 배경\n${rec.background}`,
-      rec.tasks && `## 담당 업무\n${rec.tasks}`,
-      rec.techStack && `## 사용 기술\n${rec.techStack}`,
-      rec.achievements && `## 성과\n${rec.achievements}`,
-      rec.troubleshooting && `## 문제 해결\n${rec.troubleshooting}`,
-      rec.learned && `## 배운 점\n${rec.learned}`,
-    ]
-      .filter(Boolean)
-      .join("\n\n");
-    updateMarkdown(id, md);
-  };
-
-  const handleImageUpload = (projectId: number, files: FileList | null) => {
-    if (!files) return;
-    const rec = getRecord(projectId);
-    const newImages = [...rec.images];
-    Array.from(files).forEach((file) => {
-      const url = URL.createObjectURL(file);
-      newImages.push(url);
-    });
-    updateRecord(projectId, "images", newImages);
-  };
-
-  const removeImage = (projectId: number, index: number) => {
-    const rec = getRecord(projectId);
-    const newImages = rec.images.filter((_, i) => i !== index);
-    updateRecord(projectId, "images", newImages);
-  };
-
-  const handleAiSummarize = async (projectId: number) => {
-    const jp = joinedProjects.find((j) => j.project.id === projectId);
-    const rec = getRecord(projectId);
-    if (!jp) return;
-
-    const hasContent =
-      rec.tasks.trim() || rec.achievements.trim() || rec.background.trim();
-    if (!hasContent) return;
-
-    setLoadingId(projectId);
-    await new Promise((r) => setTimeout(r, 1500));
-
-    const summary = generateAiSummary(jp.project.title, rec);
-    updateSummary(projectId, summary);
-    setLoadingId(null);
-  };
-
-  const handleCopy = async (text: string, id: number) => {
-    await navigator.clipboard.writeText(text);
-    setCopiedId(id);
-    setTimeout(() => setCopiedId(null), 2000);
-  };
 
   const handleCreateSubmit = () => {
-    if (!createForm.title.trim() || !createForm.description.trim()) return;
-    createProject({
-      title: createForm.title,
-      description: createForm.description,
-      skills: createForm.skills
-        .split(",")
-        .map((s) => s.trim())
-        .filter(Boolean),
-      maxMembers: parseInt(createForm.maxMembers) || 4,
-      deadline: createForm.deadline || "미정",
-      category: createForm.category,
-      author: "나",
-    });
-    setCreateForm(defaultCreateForm);
-    setShowCreate(false);
-  };
-
-  const hasContent = (id: number) => {
-    const r = getRecord(id);
-    return !!(r.tasks.trim() || r.achievements.trim() || r.background.trim());
-  };
-
-  const nextStatus: Record<ProjectStatus, ProjectStatus | null> = {
-    recruiting: "in-progress",
-    "in-progress": "completed",
-    completed: null,
-  };
-
-  const nextStatusLabel: Record<ProjectStatus, string> = {
-    recruiting: "진행으로 변경",
-    "in-progress": "완료로 변경",
-    completed: "",
+    if (!createForm.title.trim()) return;
+    createMutation.mutate(
+      {
+        title: createForm.title,
+        description: createForm.description || undefined,
+        skills: createForm.skills
+          .split(",")
+          .map((s) => s.trim())
+          .filter(Boolean),
+        maxMembers: parseInt(createForm.maxMembers) || 4,
+        deadline: createForm.deadline || undefined,
+        category: createForm.category,
+      },
+      {
+        onSuccess: () => {
+          setCreateForm(defaultCreateForm);
+          setShowCreate(false);
+        },
+      }
+    );
   };
 
   return (
@@ -259,7 +306,11 @@ export default function MyProjectsPage() {
         </Button>
       </div>
 
-      {joinedProjects.length === 0 ? (
+      {isLoading ? (
+        <div className="flex justify-center py-20">
+          <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary/20 border-t-primary" />
+        </div>
+      ) : myProjects.length === 0 ? (
         <Card>
           <CardContent className="flex flex-col items-center justify-center py-20">
             <FolderOpen size={48} className="text-muted-foreground/30 mb-4" />
@@ -283,59 +334,54 @@ export default function MyProjectsPage() {
         </Card>
       ) : (
         <div className="space-y-6">
-          {joinedProjects.map((jp) => {
-            const rec = getRecord(jp.project.id);
-            const status = statusConfig[jp.status];
+          {myProjects.map((mp) => {
+            const status = statusConfig[mp.status];
             const StatusIcon = status.icon;
-            const canRecord = jp.status !== "recruiting";
-            const next = nextStatus[jp.status];
+            const canRecord = mp.status !== "recruiting";
+            const next = nextStatus[mp.status];
 
             return (
-              <Card key={jp.project.id}>
+              <Card key={mp.project.id}>
                 <CardHeader>
                   <div className="flex items-start justify-between gap-4">
                     <div className="flex-1">
                       <div className="flex items-center gap-2 flex-wrap">
-                        <CardTitle>{jp.project.title}</CardTitle>
+                        <CardTitle>{mp.project.title}</CardTitle>
                         <Badge className={status.color}>
                           <StatusIcon size={12} className="mr-1" />
                           {status.label}
                         </Badge>
-                        <Badge variant="secondary">{jp.project.category}</Badge>
-                        {myCreatedIds.has(jp.project.id) && (
+                        <Badge variant="secondary">{mp.project.category}</Badge>
+                        {mp.isOwner && (
                           <Badge variant="outline">내가 생성</Badge>
-                        )}
-                        {jp.summary && (
-                          <Badge className="bg-green-500/10 text-green-600 border-green-500/20">
-                            요약 완료
-                          </Badge>
                         )}
                       </div>
                       <div className="mt-2 flex flex-wrap gap-1.5">
-                        {jp.project.skills.map((skill) => (
+                        {mp.project.skills.map((skill) => (
                           <Badge key={skill} variant="outline" className="text-xs font-normal">
                             {skill}
                           </Badge>
                         ))}
                       </div>
-                      <p className="mt-2 text-xs text-muted-foreground">참여일: {jp.joinedAt}</p>
+                      <p className="mt-2 text-xs text-muted-foreground">참여일: {mp.joinedAt}</p>
                     </div>
-                    {/* 상태 변경 버튼 (팀장/생성자만) */}
-                    {jp.isOwner && next && (
+                    {mp.isOwner && next && (
                       <Button
                         size="sm"
                         variant="outline"
-                        onClick={() => changeStatus(jp.project.id, next)}
+                        disabled={statusMutation.isPending}
+                        onClick={() =>
+                          statusMutation.mutate({ id: mp.project.id, status: next })
+                        }
                       >
-                        {nextStatusLabel[jp.status]}
+                        {nextStatusLabel[mp.status]}
                       </Button>
                     )}
                   </div>
                 </CardHeader>
 
-                <CardContent className="space-y-5">
-                  {/* 매칭중 상태 */}
-                  {!canRecord && (
+                <CardContent>
+                  {!canRecord ? (
                     <div className="rounded-lg border border-amber-200 bg-amber-50 p-6 text-center">
                       <Users size={32} className="mx-auto mb-3 text-amber-500" />
                       <p className="font-medium text-amber-800">
@@ -345,263 +391,12 @@ export default function MyProjectsPage() {
                         매칭이 완료되어 프로젝트가 &quot;진행&quot; 상태로 변경되면 경험 기록을 작성할 수 있습니다.
                       </p>
                       <p className="mt-3 text-xs text-amber-500">
-                        현재 {jp.project.currentMembers}/{jp.project.maxMembers}명 참여 중 · 마감일: {jp.project.deadline}
+                        현재 {mp.project.currentMembers}/{mp.project.maxMembers}명 참여 중
+                        {mp.project.deadline && ` · 마감일: ${mp.project.deadline}`}
                       </p>
                     </div>
-                  )}
-
-                  {/* 진행/완료 상태 — 경험 기록 폼 */}
-                  {canRecord && (
-                    <>
-                      {/* 담당 역할 */}
-                      <div>
-                        <Label className="mb-2 block">담당 역할 *</Label>
-                        <Input
-                          value={rec.role}
-                          onChange={(e) => updateRecord(jp.project.id, "role", e.target.value)}
-                          placeholder="예: 프론트엔드 개발, 백엔드 리드, PM 등"
-                        />
-                      </div>
-
-                      {/* 프로젝트 배경/목표 */}
-                      <div>
-                        <Label className="mb-2 block">프로젝트 배경 및 목표</Label>
-                        <Textarea
-                          value={rec.background}
-                          onChange={(e) => updateRecord(jp.project.id, "background", e.target.value)}
-                          className="min-h-[80px]"
-                          placeholder="이 프로젝트를 시작하게 된 배경과 달성하고자 한 목표를 적어주세요."
-                        />
-                      </div>
-
-                      {/* 담당 업무 */}
-                      <div>
-                        <Label className="mb-2 block">담당 업무 *</Label>
-                        <Textarea
-                          value={rec.tasks}
-                          onChange={(e) => updateRecord(jp.project.id, "tasks", e.target.value)}
-                          className="min-h-[120px]"
-                          placeholder={`- API 설계 및 구현 (RESTful, 10+ 엔드포인트)\n- 데이터베이스 스키마 설계 (PostgreSQL)\n- CI/CD 파이프라인 구축 (GitHub Actions)\n- 코드 리뷰 및 팀 기술 가이드 작성`}
-                        />
-                        <p className="mt-1 text-xs text-muted-foreground">
-                          한 줄에 하나씩, 구체적으로 작성하세요. 수치가 있으면 더 좋습니다.
-                        </p>
-                      </div>
-
-                      {/* 사용 기술 및 선정 이유 */}
-                      <div>
-                        <Label className="mb-2 block">사용 기술 및 선정 이유</Label>
-                        <Textarea
-                          value={rec.techStack}
-                          onChange={(e) => updateRecord(jp.project.id, "techStack", e.target.value)}
-                          className="min-h-[80px]"
-                          placeholder={`- React: 컴포넌트 기반 UI 설계에 적합\n- WebSocket: 실시간 양방향 통신 필요\n- Redis: 세션 캐싱으로 응답 속도 개선`}
-                        />
-                      </div>
-
-                      {/* 성과 및 결과 */}
-                      <div>
-                        <Label className="mb-2 block">성과 및 결과 *</Label>
-                        <Textarea
-                          value={rec.achievements}
-                          onChange={(e) => updateRecord(jp.project.id, "achievements", e.target.value)}
-                          className="min-h-[100px]"
-                          placeholder={`- API 응답 시간 평균 200ms → 50ms로 75% 개선\n- 테스트 커버리지 0% → 85% 달성\n- DAU 500명 달성, 사용자 만족도 4.5/5`}
-                        />
-                        <p className="mt-1 text-xs text-muted-foreground">
-                          수치, 비율, before/after 등 정량적으로 기록하면 이력서에서 더 강력합니다.
-                        </p>
-                      </div>
-
-                      {/* 문제 해결 경험 */}
-                      <div>
-                        <Label className="mb-2 block">문제 해결 경험 (트러블슈팅)</Label>
-                        <Textarea
-                          value={rec.troubleshooting}
-                          onChange={(e) =>
-                            updateRecord(jp.project.id, "troubleshooting", e.target.value)
-                          }
-                          className="min-h-[80px]"
-                          placeholder={`- N+1 쿼리 문제 발견 → DataLoader 패턴 적용으로 해결\n- 메모리 누수 이슈 → useEffect cleanup 정리로 해결`}
-                        />
-                      </div>
-
-                      {/* 배운 점 */}
-                      <div>
-                        <Label className="mb-2 block">배운 점 / 회고</Label>
-                        <Textarea
-                          value={rec.learned}
-                          onChange={(e) => updateRecord(jp.project.id, "learned", e.target.value)}
-                          className="min-h-[60px]"
-                          placeholder="이 프로젝트를 통해 배운 점, 아쉬운 점, 다음에 개선하고 싶은 점 등"
-                        />
-                      </div>
-
-                      {/* 이미지 업로드 */}
-                      <div>
-                        <Label className="mb-2 block">스크린샷 / 결과물 이미지</Label>
-                        <div className="flex flex-wrap gap-3">
-                          {rec.images.map((img, idx) => (
-                            <div key={idx} className="group relative h-24 w-24 rounded-lg border overflow-hidden">
-                              <Image
-                                src={img}
-                                alt={`screenshot-${idx}`}
-                                fill
-                                className="object-cover"
-                              />
-                              <button
-                                onClick={() => removeImage(jp.project.id, idx)}
-                                className="absolute top-1 right-1 hidden rounded-full bg-black/60 p-0.5 text-white group-hover:block"
-                              >
-                                <X size={12} />
-                              </button>
-                            </div>
-                          ))}
-                          <button
-                            onClick={() => {
-                              setActiveImageProjectId(jp.project.id);
-                              fileInputRef.current?.click();
-                            }}
-                            className="flex h-24 w-24 flex-col items-center justify-center gap-1 rounded-lg border-2 border-dashed border-muted-foreground/30 text-muted-foreground/50 transition-colors hover:border-primary/50 hover:text-primary/50"
-                          >
-                            <ImagePlus size={20} />
-                            <span className="text-[10px]">추가</span>
-                          </button>
-                        </div>
-                        <input
-                          ref={fileInputRef}
-                          type="file"
-                          accept="image/*"
-                          multiple
-                          className="hidden"
-                          onChange={(e) => {
-                            if (activeImageProjectId !== null) {
-                              handleImageUpload(activeImageProjectId, e.target.files);
-                              e.target.value = "";
-                            }
-                          }}
-                        />
-                      </div>
-
-                      <Separator />
-
-                      {/* AI 요약 버튼 */}
-                      <div className="flex items-center gap-3">
-                        <Button
-                          onClick={() => handleAiSummarize(jp.project.id)}
-                          disabled={loadingId === jp.project.id || !hasContent(jp.project.id)}
-                        >
-                          {loadingId === jp.project.id ? (
-                            <>
-                              <div className="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-primary-foreground/30 border-t-primary-foreground" />
-                              요약 중...
-                            </>
-                          ) : (
-                            <>
-                              <Brain size={16} className="mr-2" />
-                              AI 요약
-                            </>
-                          )}
-                        </Button>
-                        {!hasContent(jp.project.id) && (
-                          <span className="text-xs text-muted-foreground">
-                            담당 업무 또는 성과를 기록해야 AI 요약이 가능합니다
-                          </span>
-                        )}
-                      </div>
-
-                      {/* AI 요약 결과 */}
-                      {jp.summary && (
-                        <div className="rounded-lg border bg-primary/5 p-6">
-                          <div className="mb-3 flex items-center justify-between">
-                            <div className="flex items-center gap-2 text-sm font-medium text-primary">
-                              <Sparkles size={16} />
-                              AI 요약 결과
-                            </div>
-                            <div className="flex items-center gap-1">
-                              {editingIds.has(jp.project.id) ? (
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  onClick={() => {
-                                    updateSummary(
-                                      jp.project.id,
-                                      editDrafts[jp.project.id] ?? jp.summary!
-                                    );
-                                    setEditingIds((prev) => {
-                                      const next = new Set(prev);
-                                      next.delete(jp.project.id);
-                                      return next;
-                                    });
-                                    setSavedId(jp.project.id);
-                                    setTimeout(() => setSavedId(null), 2000);
-                                  }}
-                                >
-                                  <Save size={14} className="mr-1" />
-                                  저장
-                                </Button>
-                              ) : (
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  onClick={() => {
-                                    setEditDrafts((prev) => ({
-                                      ...prev,
-                                      [jp.project.id]: jp.summary!,
-                                    }));
-                                    setEditingIds((prev) =>
-                                      new Set(prev).add(jp.project.id)
-                                    );
-                                  }}
-                                >
-                                  <Pencil size={14} className="mr-1" />
-                                  첨삭
-                                </Button>
-                              )}
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => handleCopy(jp.summary!, jp.project.id)}
-                              >
-                                {copiedId === jp.project.id ? (
-                                  <>
-                                    <Check size={14} className="mr-1" />
-                                    복사됨
-                                  </>
-                                ) : (
-                                  <>
-                                    <Copy size={14} className="mr-1" />
-                                    복사
-                                  </>
-                                )}
-                              </Button>
-                            </div>
-                          </div>
-                          {editingIds.has(jp.project.id) ? (
-                            <Textarea
-                              value={editDrafts[jp.project.id] ?? jp.summary!}
-                              onChange={(e) =>
-                                setEditDrafts((prev) => ({
-                                  ...prev,
-                                  [jp.project.id]: e.target.value,
-                                }))
-                              }
-                              className="min-h-[150px] font-mono text-sm bg-white"
-                            />
-                          ) : (
-                            <div className="whitespace-pre-wrap text-sm leading-relaxed">
-                              {jp.summary}
-                              {savedId === jp.project.id && (
-                                <p className="mt-3 flex items-center gap-1 text-xs text-green-600">
-                                  <Check size={12} />
-                                  저장되었습니다
-                                </p>
-                              )}
-                            </div>
-                          )}
-                        </div>
-                      )}
-                    </>
+                  ) : (
+                    <ExperienceSection projectId={mp.project.id} />
                   )}
                 </CardContent>
               </Card>
@@ -688,14 +483,13 @@ export default function MyProjectsPage() {
             </Button>
             <Button
               onClick={handleCreateSubmit}
-              disabled={!createForm.title.trim() || !createForm.description.trim()}
+              disabled={!createForm.title.trim() || createMutation.isPending}
             >
-              생성하기
+              {createMutation.isPending ? "생성 중..." : "생성하기"}
             </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
-
     </div>
   );
 }

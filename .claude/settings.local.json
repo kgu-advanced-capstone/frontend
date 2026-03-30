@@ -2,7 +2,19 @@
   "permissions": {
     "allow": [
       "Bash(pnpm add:*)",
-      "Bash(pnpm dlx:*)"
+      "Bash(pnpm dlx:*)",
+      "Bash(pnpm build:*)",
+      "Bash(pnpm dev:*)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(git push:*)",
+      "WebFetch(domain:pcserver.cloud)",
+      "Bash(ls:*)",
+      "Bash(find /Users/jinhy/workspace/frontend -type f \\\\\\(-name *.env* -o -name next.config.* -o -name .env* \\\\\\))",
+      "Bash(npm install:*)",
+      "Bash(pnpm exec:*)",
+      "Bash(find /Users/jinhy/workspace/frontend -maxdepth 2 -type f \\\\\\(-name vitest.config.* -o -name jest.config.* -o -name vitest.setup.* -o -name jest.setup.* \\\\\\))",
+      "Bash(pnpm test:*)"
     ]
   }
 }

@@ -7,10 +7,10 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import type { Project } from "@/data/dummy";
+import type { ProjectSummaryResponse } from "@/api/types";
 
 interface ProjectCardProps {
-  project: Project;
+  project: ProjectSummaryResponse;
   onJoin?: (id: number) => void;
   joined?: boolean;
 }
@@ -41,9 +41,6 @@ export default function ProjectCard({ project, onJoin, joined }: ProjectCardProp
       </CardHeader>
 
       <CardContent className="flex-1 pb-3">
-        <p className="text-sm leading-relaxed text-muted-foreground line-clamp-2">
-          {project.description}
-        </p>
         <div className="mt-4 flex flex-wrap gap-1.5">
           {project.skills.map((skill) => (
             <Badge key={skill} variant="outline" className="text-xs font-normal">
@@ -61,7 +58,7 @@ export default function ProjectCard({ project, onJoin, joined }: ProjectCardProp
           </span>
           <span className="flex items-center gap-1">
             <Calendar size={14} />
-            ~{project.deadline}
+            {project.createdAt}
           </span>
         </div>
         <div className="flex items-center gap-2">
