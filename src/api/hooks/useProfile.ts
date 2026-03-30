@@ -2,6 +2,7 @@
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import client from "../client";
+import { authKeys } from "./useAuth";
 import type { ProfileResponse, UpdateProfileRequest } from "../types";
 
 export const profileKeys = {
@@ -29,6 +30,7 @@ export function useUpdateProfile() {
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: profileKeys.me });
+      qc.invalidateQueries({ queryKey: authKeys.me });
     },
   });
 }

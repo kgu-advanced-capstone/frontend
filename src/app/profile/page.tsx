@@ -1,8 +1,18 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
-import { User, Mail, Phone, Github, Globe, Check, ImagePlus } from "lucide-react";
+import {
+  User,
+  Mail,
+  Phone,
+  Github,
+  Globe,
+  Check,
+  ImagePlus,
+  AlertCircle,
+  RotateCcw,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -12,30 +22,107 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useAuth } from "@/contexts/AuthContext";
 import { useProfile, useUpdateProfile } from "@/api/hooks/useProfile";
 
+interface FormState {
+  name: string;
+  phone: string;
+  github: string;
+  blog: string;
+  profileImage: string;
+}
+
+interface FormErrors {
+  name?: string;
+  phone?: string;
+  github?: string;
+  blog?: string;
+  profileImage?: string;
+}
+
+function validateForm(form: FormState): FormErrors {
+  const errors: FormErrors = {};
+
+  if (!form.name.trim()) {
+    errors.name = "이름을 입력해주세요.";
+  } else if (form.name.trim().length < 2) {
+    errors.name = "이름은 2자 이상이어야 합니다.";
+  }
+
+  if (form.phone && !/^[\d\-+() ]{0,20}$/.test(form.phone)) {
+    errors.phone = "올바른 전화번호 형식이 아닙니다.";
+  }
+
+  if (form.github && !/^https?:\/\/.+/.test(form.github)) {
+    errors.github = "URL 형식으로 입력해주세요. (https://...)";
+  }
+
+  if (form.blog && !/^https?:\/\/.+/.test(form.blog)) {
+    errors.blog = "URL 형식으로 입력해주세요. (https://...)";
+  }
+
+  if (form.profileImage && !/^https?:\/\/.+/.test(form.profileImage)) {
+    errors.profileImage = "URL 형식으로 입력해주세요. (https://...)";
+  }
+
+  return errors;
+}
+
 export default function ProfilePage() {
   const { user } = useAuth();
   const router = useRouter();
-  const { data: profile, isLoading } = useProfile();
+  const { data: profile, isLoading, error: profileError } = useProfile();
   const updateMutation = useUpdateProfile();
 
-  const [name, setName] = useState("");
-  const [phone, setPhone] = useState("");
-  const [github, setGithub] = useState("");
-  const [blog, setBlog] = useState("");
-  const [profileImage, setProfileImage] = useState("");
+  const [form, setForm] = useState<FormState>({
+    name: "",
+    phone: "",
+    github: "",
+    blog: "",
+    profileImage: "",
+  });
+  const [errors, setErrors] = useState<FormErrors>({});
   const [initialized, setInitialized] = useState(false);
+
+  const initialForm = useCallback((): FormState => {
+    if (!profile) return { name: "", phone: "", github: "", blog: "", profileImage: "" };
+    return {
+      name: profile.name || "",
+      phone: profile.phone || "",
+      github: profile.github || "",
+      blog: profile.blog || "",
+      profileImage: profile.profileImage || "",
+    };
+  }, [profile]);
 
   // 프로필 데이터 로드 후 폼 초기화
   useEffect(() => {
     if (profile && !initialized) {
-      setName(profile.name || "");
-      setPhone(profile.phone || "");
-      setGithub(profile.github || "");
-      setBlog(profile.blog || "");
-      setProfileImage(profile.profileImage || "");
+      setForm(initialForm());
       setInitialized(true);
     }
-  }, [profile, initialized]);
+  }, [profile, initialized, initialForm]);
+
+  const isDirty =
+    initialized &&
+    profile &&
+    (form.name !== (profile.name || "") ||
+      form.phone !== (profile.phone || "") ||
+      form.github !== (profile.github || "") ||
+      form.blog !== (profile.blog || "") ||
+      form.profileImage !== (profile.profileImage || ""));
+
+  const updateField = (field: keyof FormState, value: string) => {
+    setForm((prev) => ({ ...prev, [field]: value }));
+    // 해당 필드 에러 초기화
+    if (errors[field]) {
+      setErrors((prev) => ({ ...prev, [field]: undefined }));
+    }
+  };
+
+  const handleReset = () => {
+    setForm(initialForm());
+    setErrors({});
+    updateMutation.reset();
+  };
 
   if (!user) {
     router.push("/login");
@@ -50,14 +137,33 @@ export default function ProfilePage() {
     );
   }
 
+  if (profileError) {
+    return (
+      <div className="mx-auto max-w-2xl px-6 py-12">
+        <div className="flex items-center gap-2 rounded-lg border border-destructive/50 bg-destructive/10 p-4 text-destructive">
+          <AlertCircle size={20} />
+          <p className="text-sm">프로필을 불러오는데 실패했습니다. 잠시 후 다시 시도해주세요.</p>
+        </div>
+      </div>
+    );
+  }
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+
+    const validationErrors = validateForm(form);
+    if (Object.keys(validationErrors).length > 0) {
+      setErrors(validationErrors);
+      return;
+    }
+
+    setErrors({});
     updateMutation.mutate({
-      name: name || undefined,
-      phone: phone || undefined,
-      github: github || undefined,
-      blog: blog || undefined,
-      profileImage: profileImage || undefined,
+      name: form.name.trim() || undefined,
+      phone: form.phone.trim() || undefined,
+      github: form.github.trim() || undefined,
+      blog: form.blog.trim() || undefined,
+      profileImage: form.profileImage.trim() || undefined,
     });
   };
 
@@ -71,6 +177,14 @@ export default function ProfilePage() {
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-6">
+        {/* 서버 에러 메시지 */}
+        {updateMutation.isError && (
+          <div className="flex items-center gap-2 rounded-lg border border-destructive/50 bg-destructive/10 p-4 text-destructive">
+            <AlertCircle size={20} />
+            <p className="text-sm">프로필 저장에 실패했습니다. 잠시 후 다시 시도해주세요.</p>
+          </div>
+        )}
+
         {/* 프로필 이미지 */}
         <Card>
           <CardHeader>
@@ -78,30 +192,36 @@ export default function ProfilePage() {
           </CardHeader>
           <CardContent className="flex items-center gap-6">
             <Avatar className="h-20 w-20">
-              {profileImage ? (
-                <AvatarImage src={profileImage} alt={name} />
+              {form.profileImage ? (
+                <AvatarImage src={form.profileImage} alt={form.name} />
               ) : null}
               <AvatarFallback className="bg-primary/10 text-2xl text-primary">
-                {name?.[0] || user.name[0]}
+                {form.name?.[0] || user.name[0]}
               </AvatarFallback>
             </Avatar>
             <div className="flex-1">
               <Label className="mb-2 block text-sm">이미지 URL</Label>
-              <div className="flex gap-2">
-                <div className="relative flex-1">
-                  <ImagePlus size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
-                  <Input
-                    value={profileImage}
-                    onChange={(e) => setProfileImage(e.target.value)}
-                    placeholder="https://example.com/photo.jpg"
-                    className="pl-10"
-                    maxLength={500}
-                  />
-                </div>
+              <div className="relative">
+                <ImagePlus
+                  size={16}
+                  className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground"
+                />
+                <Input
+                  value={form.profileImage}
+                  onChange={(e) => updateField("profileImage", e.target.value)}
+                  placeholder="https://example.com/photo.jpg"
+                  className="pl-10"
+                  maxLength={500}
+                  aria-invalid={!!errors.profileImage}
+                />
               </div>
-              <p className="mt-1 text-xs text-muted-foreground">
-                프로필 사진 URL을 입력하세요.
-              </p>
+              {errors.profileImage ? (
+                <p className="mt-1 text-xs text-destructive">{errors.profileImage}</p>
+              ) : (
+                <p className="mt-1 text-xs text-muted-foreground">
+                  프로필 사진 URL을 입력하세요.
+                </p>
+              )}
             </div>
           </CardContent>
         </Card>
@@ -115,23 +235,33 @@ export default function ProfilePage() {
             <div className="space-y-2">
               <Label htmlFor="name">이름</Label>
               <div className="relative">
-                <User size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+                <User
+                  size={16}
+                  className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground"
+                />
                 <Input
                   id="name"
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
+                  value={form.name}
+                  onChange={(e) => updateField("name", e.target.value)}
                   placeholder="홍길동"
                   className="pl-10"
                   minLength={2}
                   maxLength={50}
+                  aria-invalid={!!errors.name}
                 />
               </div>
+              {errors.name && (
+                <p className="text-xs text-destructive">{errors.name}</p>
+              )}
             </div>
 
             <div className="space-y-2">
               <Label htmlFor="email">이메일</Label>
               <div className="relative">
-                <Mail size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+                <Mail
+                  size={16}
+                  className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground"
+                />
                 <Input
                   id="email"
                   value={profile?.email || ""}
@@ -145,16 +275,23 @@ export default function ProfilePage() {
             <div className="space-y-2">
               <Label htmlFor="phone">전화번호</Label>
               <div className="relative">
-                <Phone size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+                <Phone
+                  size={16}
+                  className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground"
+                />
                 <Input
                   id="phone"
-                  value={phone}
-                  onChange={(e) => setPhone(e.target.value)}
+                  value={form.phone}
+                  onChange={(e) => updateField("phone", e.target.value)}
                   placeholder="010-1234-5678"
                   className="pl-10"
                   maxLength={20}
+                  aria-invalid={!!errors.phone}
                 />
               </div>
+              {errors.phone && (
+                <p className="text-xs text-destructive">{errors.phone}</p>
+              )}
             </div>
           </CardContent>
         </Card>
@@ -168,38 +305,52 @@ export default function ProfilePage() {
             <div className="space-y-2">
               <Label htmlFor="github">GitHub</Label>
               <div className="relative">
-                <Github size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+                <Github
+                  size={16}
+                  className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground"
+                />
                 <Input
                   id="github"
-                  value={github}
-                  onChange={(e) => setGithub(e.target.value)}
+                  value={form.github}
+                  onChange={(e) => updateField("github", e.target.value)}
                   placeholder="https://github.com/username"
                   className="pl-10"
                   maxLength={200}
+                  aria-invalid={!!errors.github}
                 />
               </div>
+              {errors.github && (
+                <p className="text-xs text-destructive">{errors.github}</p>
+              )}
             </div>
 
             <div className="space-y-2">
               <Label htmlFor="blog">블로그</Label>
               <div className="relative">
-                <Globe size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+                <Globe
+                  size={16}
+                  className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground"
+                />
                 <Input
                   id="blog"
-                  value={blog}
-                  onChange={(e) => setBlog(e.target.value)}
+                  value={form.blog}
+                  onChange={(e) => updateField("blog", e.target.value)}
                   placeholder="https://blog.example.com"
                   className="pl-10"
                   maxLength={200}
+                  aria-invalid={!!errors.blog}
                 />
               </div>
+              {errors.blog && (
+                <p className="text-xs text-destructive">{errors.blog}</p>
+              )}
             </div>
           </CardContent>
         </Card>
 
         <Separator />
 
-        {/* 저장 */}
+        {/* 저장 / 취소 */}
         <div className="flex items-center gap-3">
           <Button type="submit" disabled={updateMutation.isPending}>
             {updateMutation.isPending ? (
@@ -211,7 +362,13 @@ export default function ProfilePage() {
               "프로필 저장"
             )}
           </Button>
-          {updateMutation.isSuccess && (
+          {isDirty && (
+            <Button type="button" variant="outline" onClick={handleReset}>
+              <RotateCcw size={14} className="mr-1" />
+              되돌리기
+            </Button>
+          )}
+          {updateMutation.isSuccess && !isDirty && (
             <span className="flex items-center gap-1 text-sm text-green-600">
               <Check size={14} />
               저장되었습니다
