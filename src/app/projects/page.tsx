@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState } from "react";
 import { Search, CheckCircle, AlertTriangle } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -14,58 +14,34 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import ProjectCard from "@/components/ProjectCard";
-import { projects as allProjects, categories } from "@/data/dummy";
-import { useProjects } from "@/contexts/ProjectContext";
-
-const PAGE_SIZE = 6;
+import { categories } from "@/data/dummy";
+import { useProjects, useApplyProject, useMyProjects } from "@/api/hooks/useProjects";
 
 export default function ProjectsPage() {
   const [category, setCategory] = useState("전체");
   const [search, setSearch] = useState("");
-  const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
+  const [page, setPage] = useState(1);
   const [confirmProject, setConfirmProject] = useState<{ id: number; title: string } | null>(null);
   const [joinedProject, setJoinedProject] = useState<string | null>(null);
-  const loaderRef = useRef<HTMLDivElement>(null);
-  const { joinProject, isJoined } = useProjects();
 
-  const filtered = allProjects.filter((p) => {
-    const matchCategory = category === "전체" || p.category === category;
-    const matchSearch =
-      search === "" ||
-      p.title.toLowerCase().includes(search.toLowerCase()) ||
-      p.skills.some((s) => s.toLowerCase().includes(search.toLowerCase()));
-    return matchCategory && matchSearch;
+  const { data, isLoading } = useProjects({
+    category: category === "전체" ? undefined : category,
+    search: search || undefined,
+    page,
+    limit: 12,
   });
 
-  const visible = filtered.slice(0, visibleCount);
-  const hasMore = visibleCount < filtered.length;
+  const { data: myProjects } = useMyProjects();
+  const applyMutation = useApplyProject();
 
-  const loadMore = useCallback(() => {
-    if (hasMore) {
-      setVisibleCount((prev) => prev + PAGE_SIZE);
-    }
-  }, [hasMore]);
+  const joinedIds = new Set(myProjects?.map((mp) => mp.project.id) ?? []);
 
-  useEffect(() => {
-    setVisibleCount(PAGE_SIZE);
-  }, [category, search]);
-
-  useEffect(() => {
-    const observer = new IntersectionObserver(
-      (entries) => {
-        if (entries[0].isIntersecting) loadMore();
-      },
-      { threshold: 0.1 }
-    );
-    const current = loaderRef.current;
-    if (current) observer.observe(current);
-    return () => {
-      if (current) observer.unobserve(current);
-    };
-  }, [loadMore]);
+  const projects = data?.projects ?? [];
+  const totalCount = data?.totalCount ?? 0;
+  const totalPages = Math.ceil(totalCount / 12);
 
   const handleJoinClick = (id: number) => {
-    const project = allProjects.find((p) => p.id === id);
+    const project = projects.find((p) => p.id === id);
     if (project) {
       setConfirmProject({ id: project.id, title: project.title });
     }
@@ -73,9 +49,12 @@ export default function ProjectsPage() {
 
   const handleConfirmJoin = () => {
     if (!confirmProject) return;
-    joinProject(confirmProject.id);
-    setJoinedProject(confirmProject.title);
-    setConfirmProject(null);
+    applyMutation.mutate(confirmProject.id, {
+      onSuccess: () => {
+        setJoinedProject(confirmProject.title);
+        setConfirmProject(null);
+      },
+    });
   };
 
   return (
@@ -96,7 +75,10 @@ export default function ProjectsPage() {
           <Input
             placeholder="프로젝트 또는 기술 스택 검색..."
             value={search}
-            onChange={(e) => setSearch(e.target.value)}
+            onChange={(e) => {
+              setSearch(e.target.value);
+              setPage(1);
+            }}
             className="pl-10"
           />
         </div>
@@ -107,7 +89,10 @@ export default function ProjectsPage() {
               key={cat}
               variant={category === cat ? "default" : "secondary"}
               className="cursor-pointer text-sm px-3 py-1"
-              onClick={() => setCategory(cat)}
+              onClick={() => {
+                setCategory(cat);
+                setPage(1);
+              }}
             >
               {cat}
             </Badge>
@@ -117,11 +102,15 @@ export default function ProjectsPage() {
 
       <p className="mb-6 text-sm text-muted-foreground">
         총{" "}
-        <span className="font-semibold text-primary">{filtered.length}</span>
+        <span className="font-semibold text-primary">{totalCount}</span>
         개의 프로젝트
       </p>
 
-      {visible.length === 0 ? (
+      {isLoading ? (
+        <div className="flex justify-center py-20">
+          <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary/20 border-t-primary" />
+        </div>
+      ) : projects.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-20 text-muted-foreground">
           <p className="text-lg">검색 결과가 없습니다.</p>
           <p className="mt-1 text-sm">
@@ -129,38 +118,43 @@ export default function ProjectsPage() {
           </p>
         </div>
       ) : (
-        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-          {visible.map((project) => (
-            <ProjectCard
-              key={project.id}
-              project={
-                isJoined(project.id)
-                  ? {
-                      ...project,
-                      currentMembers: Math.min(
-                        project.currentMembers + 1,
-                        project.maxMembers
-                      ),
-                    }
-                  : project
-              }
-              onJoin={handleJoinClick}
-              joined={isJoined(project.id)}
-            />
-          ))}
-        </div>
-      )}
+        <>
+          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+            {projects.map((project) => (
+              <ProjectCard
+                key={project.id}
+                project={project}
+                onJoin={handleJoinClick}
+                joined={joinedIds.has(project.id)}
+              />
+            ))}
+          </div>
 
-      {hasMore && (
-        <div ref={loaderRef} className="flex justify-center py-12">
-          <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary/20 border-t-primary" />
-        </div>
-      )}
-
-      {!hasMore && visible.length > 0 && (
-        <p className="py-12 text-center text-sm text-muted-foreground">
-          모든 프로젝트를 불러왔습니다.
-        </p>
+          {/* 페이지네이션 */}
+          {totalPages > 1 && (
+            <div className="mt-10 flex items-center justify-center gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                disabled={page <= 1}
+                onClick={() => setPage((p) => p - 1)}
+              >
+                이전
+              </Button>
+              <span className="text-sm text-muted-foreground">
+                {page} / {totalPages}
+              </span>
+              <Button
+                variant="outline"
+                size="sm"
+                disabled={page >= totalPages}
+                onClick={() => setPage((p) => p + 1)}
+              >
+                다음
+              </Button>
+            </div>
+          )}
+        </>
       )}
 
       {/* 참가 확인 모달 */}
@@ -184,8 +178,8 @@ export default function ProjectsPage() {
             <Button variant="outline" className="flex-1" onClick={() => setConfirmProject(null)}>
               취소
             </Button>
-            <Button className="flex-1" onClick={handleConfirmJoin}>
-              참가 신청
+            <Button className="flex-1" onClick={handleConfirmJoin} disabled={applyMutation.isPending}>
+              {applyMutation.isPending ? "신청 중..." : "참가 신청"}
             </Button>
           </DialogFooter>
         </DialogContent>

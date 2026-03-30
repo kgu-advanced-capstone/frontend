@@ -1,13 +1,12 @@
 "use client";
 
-import { use } from "react";
+import { use, useState } from "react";
 import Link from "next/link";
 import { ArrowLeft, Users, Calendar, User, CheckCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import {
   Dialog,
   DialogContent,
@@ -16,11 +15,7 @@ import {
   DialogDescription,
   DialogFooter,
 } from "@/components/ui/dialog";
-import { projects } from "@/data/dummy";
-import { useProjects } from "@/contexts/ProjectContext";
-import { useState } from "react";
-
-const memberNames = ["김지현", "박서준", "이수민", "정민우", "한소희", "오태현"];
+import { useProject, useApplyProject, useMyProjects } from "@/api/hooks/useProjects";
 
 export default function ProjectDetailPage({
   params,
@@ -28,9 +23,21 @@ export default function ProjectDetailPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = use(params);
-  const project = projects.find((p) => p.id === Number(id));
-  const { isJoined, joinProject } = useProjects();
+  const projectId = Number(id);
+  const { data: project, isLoading } = useProject(projectId);
+  const { data: myProjects } = useMyProjects();
+  const applyMutation = useApplyProject();
   const [showJoinModal, setShowJoinModal] = useState(false);
+
+  const joined = myProjects?.some((mp) => mp.project.id === projectId) ?? false;
+
+  if (isLoading) {
+    return (
+      <div className="flex min-h-[60vh] items-center justify-center">
+        <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary/20 border-t-primary" />
+      </div>
+    );
+  }
 
   if (!project) {
     return (
@@ -40,17 +47,12 @@ export default function ProjectDetailPage({
     );
   }
 
-  const joined = isJoined(project.id);
-  const isFull =
-    project.currentMembers + (joined ? 1 : 0) >= project.maxMembers;
-  const members = memberNames.slice(
-    0,
-    project.currentMembers + (joined ? 1 : 0)
-  );
+  const isFull = project.currentMembers >= project.maxMembers;
 
   const handleJoin = () => {
-    joinProject(project.id);
-    setShowJoinModal(true);
+    applyMutation.mutate(project.id, {
+      onSuccess: () => setShowJoinModal(true),
+    });
   };
 
   return (
@@ -78,8 +80,8 @@ export default function ProjectDetailPage({
             참여 중
           </Badge>
         ) : (
-          <Button size="lg" disabled={isFull} onClick={handleJoin}>
-            {isFull ? "마감" : "프로젝트 참가"}
+          <Button size="lg" disabled={isFull || applyMutation.isPending} onClick={handleJoin}>
+            {applyMutation.isPending ? "신청 중..." : isFull ? "마감" : "프로젝트 참가"}
           </Button>
         )}
       </div>
@@ -130,44 +132,18 @@ export default function ProjectDetailPage({
               <div className="flex items-center gap-3 text-sm">
                 <Users size={16} className="text-muted-foreground" />
                 <span>
-                  {project.currentMembers + (joined ? 1 : 0)}/
-                  {project.maxMembers}명 참여 중
+                  {project.currentMembers}/{project.maxMembers}명 참여 중
                 </span>
               </div>
-              <div className="flex items-center gap-3 text-sm">
-                <Calendar size={16} className="text-muted-foreground" />
-                <span>마감일: {project.deadline}</span>
-              </div>
+              {project.deadline && (
+                <div className="flex items-center gap-3 text-sm">
+                  <Calendar size={16} className="text-muted-foreground" />
+                  <span>마감일: {project.deadline}</span>
+                </div>
+              )}
               <div className="flex items-center gap-3 text-sm">
                 <User size={16} className="text-muted-foreground" />
                 <span>개설자: {project.author}</span>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-base">팀원</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-3">
-                {members.map((name, i) => (
-                  <div key={i} className="flex items-center gap-3">
-                    <Avatar className="h-8 w-8">
-                      <AvatarFallback className="text-xs bg-primary/10 text-primary">
-                        {name[0]}
-                      </AvatarFallback>
-                    </Avatar>
-                    <span className="text-sm">
-                      {name}
-                      {i === 0 && (
-                        <Badge variant="outline" className="ml-2 text-[10px]">
-                          팀장
-                        </Badge>
-                      )}
-                    </span>
-                  </div>
-                ))}
               </div>
             </CardContent>
           </Card>
