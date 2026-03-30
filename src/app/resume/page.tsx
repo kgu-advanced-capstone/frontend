@@ -9,11 +9,9 @@ import { Separator } from "@/components/ui/separator";
 import { buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { useResume, useGenerateResume } from "@/api/hooks/useResume";
-import { useProfile } from "@/api/hooks/useProfile";
 
 export default function ResumePage() {
   const { data: resume, isLoading } = useResume();
-  const { data: profile } = useProfile();
   const generateMutation = useGenerateResume();
 
   const hasSummaries =

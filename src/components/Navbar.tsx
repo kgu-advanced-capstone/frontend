@@ -112,14 +112,17 @@ export default function Navbar() {
 
           {user ? (
             <div className="flex items-center gap-3">
-              <div className="flex items-center gap-2">
+              <Link
+                href="/profile"
+                className="flex items-center gap-2 rounded-md px-2 py-1 transition-colors hover:bg-muted"
+              >
                 <Avatar className="h-7 w-7">
                   <AvatarFallback className="bg-primary/10 text-xs text-primary">
                     {user.name[0]}
                   </AvatarFallback>
                 </Avatar>
                 <span className="text-sm font-medium">{user.name}</span>
-              </div>
+              </Link>
               <Button size="sm" variant="ghost" onClick={logout}>
                 <LogOut size={16} />
               </Button>
@@ -164,22 +167,33 @@ export default function Navbar() {
             </Link>
           ))}
           {user ? (
-            <div className="mt-2 flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <User size={16} className="text-muted-foreground" />
-                <span className="text-sm font-medium">{user.name}</span>
-              </div>
-              <Button
-                size="sm"
-                variant="ghost"
-                onClick={() => {
-                  logout();
-                  setMobileOpen(false);
-                }}
+            <div className="mt-2 space-y-2">
+              <Link
+                href="/profile"
+                onClick={() => setMobileOpen(false)}
+                className={`flex items-center gap-2 rounded-md px-2 py-2 text-sm font-medium transition-colors ${
+                  pathname === "/profile"
+                    ? "bg-primary/10 text-primary"
+                    : "text-muted-foreground hover:bg-muted"
+                }`}
               >
-                <LogOut size={16} />
-                로그아웃
-              </Button>
+                <User size={16} />
+                프로필 수정
+              </Link>
+              <div className="flex items-center justify-between">
+                <span className="text-sm font-medium">{user.name}</span>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  onClick={() => {
+                    logout();
+                    setMobileOpen(false);
+                  }}
+                >
+                  <LogOut size={16} />
+                  로그아웃
+                </Button>
+              </div>
             </div>
           ) : (
             <div className="mt-4 grid grid-cols-2 gap-3">
