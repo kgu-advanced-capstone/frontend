@@ -16,7 +16,7 @@ interface ProjectCardProps {
 }
 
 export default function ProjectCard({ project, onJoin, joined }: ProjectCardProps) {
-  const isFull = project.currentMembers >= project.maxMembers;
+  const isFull = (project.currentMembers ?? 0) >= (project.maxMembers ?? 0);
 
   return (
     <Card className="flex flex-col transition-shadow hover:shadow-lg">
@@ -42,9 +42,9 @@ export default function ProjectCard({ project, onJoin, joined }: ProjectCardProp
 
       <CardContent className="flex-1 pb-3">
         <div className="mt-4 flex flex-wrap gap-1.5">
-          {project.skills.map((skill) => (
-            <Badge key={skill} variant="outline" className="text-xs font-normal">
-              {skill}
+          {project.skills?.map((skill) => (
+            <Badge key={skill as string} variant="outline" className="text-xs font-normal">
+              {skill as string}
             </Badge>
           ))}
         </div>
@@ -54,7 +54,7 @@ export default function ProjectCard({ project, onJoin, joined }: ProjectCardProp
         <div className="flex items-center gap-4 text-xs text-muted-foreground">
           <span className="flex items-center gap-1">
             <Users size={14} />
-            {project.currentMembers}/{project.maxMembers}명
+            {project.currentMembers ?? 0}/{project.maxMembers ?? 0}명
           </span>
           <span className="flex items-center gap-1">
             <Calendar size={14} />
@@ -76,7 +76,7 @@ export default function ProjectCard({ project, onJoin, joined }: ProjectCardProp
           ) : (
             <Button
               size="sm"
-              onClick={() => onJoin?.(project.id)}
+              onClick={() => project.id && onJoin?.(project.id)}
               disabled={isFull}
               variant={isFull ? "outline" : "default"}
             >

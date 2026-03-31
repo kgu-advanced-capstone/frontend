@@ -104,7 +104,7 @@ export default function Navbar() {
                           "w-full px-4 py-3 text-left text-sm transition-colors hover:bg-muted/50",
                           !n.read && "bg-primary/5"
                         )}
-                        onClick={() => markAsRead.mutate({ id: n.id })}
+                        onClick={() => n.id && markAsRead.mutate({ id: n.id })}
                       >
                         <p className={cn("leading-snug", !n.read && "font-medium")}>
                           {n.message}
@@ -128,7 +128,7 @@ export default function Navbar() {
               >
                 <Avatar className="h-7 w-7">
                   <AvatarFallback className="bg-primary/10 text-xs text-primary">
-                    {user.name[0]}
+                    {user.name?.[0] || "U"}
                   </AvatarFallback>
                 </Avatar>
                 <span className="text-sm font-medium">{user.name}</span>

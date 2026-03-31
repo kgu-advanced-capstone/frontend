@@ -104,25 +104,25 @@ export default function ResumePage() {
                 <div className="grid grid-cols-2 gap-4 text-sm">
                   <div>
                     <span className="text-muted-foreground">이름</span>
-                    <p className="font-medium">{resume.basicInfo.name}</p>
+                    <p className="font-medium">{resume.basicInfo?.name}</p>
                   </div>
                   <div>
                     <span className="text-muted-foreground">이메일</span>
-                    <p className="font-medium">{resume.basicInfo.email}</p>
+                    <p className="font-medium">{resume.basicInfo?.email}</p>
                   </div>
-                  {resume.basicInfo.phone && (
+                  {resume.basicInfo?.phone && (
                     <div>
                       <span className="text-muted-foreground">전화</span>
                       <p className="font-medium">{resume.basicInfo.phone}</p>
                     </div>
                   )}
-                  {resume.basicInfo.github && (
+                  {resume.basicInfo?.github && (
                     <div>
                       <span className="text-muted-foreground">GitHub</span>
                       <p className="font-medium">{resume.basicInfo.github}</p>
                     </div>
                   )}
-                  {resume.basicInfo.blog && (
+                  {resume.basicInfo?.blog && (
                     <div>
                       <span className="text-muted-foreground">블로그</span>
                       <p className="font-medium">{resume.basicInfo.blog}</p>
@@ -135,11 +135,11 @@ export default function ResumePage() {
             <Card>
               <CardHeader>
                 <CardTitle>
-                  포함된 프로젝트 ({resume.summarizedExperiences.length})
+                  포함된 프로젝트 ({resume.summarizedExperiences?.length || 0})
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-3">
-                {resume.summarizedExperiences.map((exp) => (
+                {resume.summarizedExperiences?.map((exp) => (
                   <div
                     key={exp.projectId}
                     className="flex items-center justify-between rounded-lg border p-3"
@@ -147,9 +147,9 @@ export default function ResumePage() {
                     <div>
                       <p className="text-sm font-medium">{exp.projectTitle}</p>
                       <div className="mt-1 flex gap-1">
-                        {exp.keyPoints.slice(0, 2).map((kp, i) => (
+                        {exp.keyPoints?.slice(0, 2).map((kp, i) => (
                           <Badge key={i} variant="outline" className="text-[10px]">
-                            {kp.slice(0, 30)}...
+                            {(kp as string)?.slice(0, 30)}...
                           </Badge>
                         ))}
                       </div>
@@ -179,16 +179,16 @@ export default function ResumePage() {
               <CardContent className="space-y-6">
                 <div>
                   <h2 className="text-xl font-bold">
-                    {resume.basicInfo.name || "이름"}
+                    {resume.basicInfo?.name || "이름"}
                   </h2>
                   <p className="text-sm text-muted-foreground">
-                    {[resume.basicInfo.email, resume.basicInfo.phone]
+                    {[resume.basicInfo?.email, resume.basicInfo?.phone]
                       .filter(Boolean)
                       .join(" · ")}
                   </p>
-                  {(resume.basicInfo.github || resume.basicInfo.blog) && (
+                  {(resume.basicInfo?.github || resume.basicInfo?.blog) && (
                     <p className="text-sm text-muted-foreground">
-                      {[resume.basicInfo.github, resume.basicInfo.blog]
+                      {[resume.basicInfo?.github, resume.basicInfo?.blog]
                         .filter(Boolean)
                         .join(" · ")}
                     </p>
@@ -202,13 +202,13 @@ export default function ResumePage() {
                     프로젝트 경험
                   </h3>
                   <div className="space-y-5">
-                    {resume.summarizedExperiences.map((exp) => (
+                    {resume.summarizedExperiences?.map((exp) => (
                       <div key={exp.projectId}>
                         <p className="font-medium">{exp.projectTitle}</p>
                         <ul className="mt-1 space-y-1">
-                          {exp.keyPoints.map((kp, i) => (
+                          {exp.keyPoints?.map((kp, i) => (
                             <li key={i} className="text-sm text-muted-foreground">
-                              - {kp}
+                              - {kp as string}
                             </li>
                           ))}
                         </ul>
@@ -226,13 +226,13 @@ export default function ResumePage() {
                   <div className="flex flex-wrap gap-1.5">
                     {[
                       ...new Set(
-                        resume.summarizedExperiences.flatMap((e) => e.keyPoints)
+                        resume.summarizedExperiences?.flatMap((e) => e.keyPoints || []) ?? []
                       ),
                     ]
                       .slice(0, 10)
                       .map((skill, i) => (
                         <Badge key={i} variant="secondary">
-                          {skill.slice(0, 20)}
+                          {(skill as string).slice(0, 20)}
                         </Badge>
                       ))}
                   </div>

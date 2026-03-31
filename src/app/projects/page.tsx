@@ -42,7 +42,11 @@ export default function ProjectsPage() {
   });
   const applyMutation = projectApi.useApplyProject();
 
-  const joinedIds = new Set(myProjects?.map((mp) => mp.project.id) ?? []);
+  const joinedIds = new Set(
+    myProjects
+      ?.map((mp) => mp.project?.id)
+      .filter((id): id is number => typeof id === "number") ?? []
+  );
 
   const projects = data?.projects ?? [];
   const totalCount = data?.totalCount ?? 0;
@@ -50,7 +54,7 @@ export default function ProjectsPage() {
 
   const handleJoinClick = (id: number) => {
     const project = projects.find((p) => p.id === id);
-    if (project) {
+    if (project && project.id && project.title) {
       setConfirmProject({ id: project.id, title: project.title });
     }
   };
@@ -128,7 +132,7 @@ export default function ProjectsPage() {
       ) : (
         <>
           <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-            {projects.map((project) => (
+            {projects.map((project) => project.id && (
               <ProjectCard
                 key={project.id}
                 project={project}

@@ -371,7 +371,7 @@ export default function ProfilePage() {
         </p>
       </div>
 
-      <ProfileForm key={profile.email} profile={profile} userName={user.name} />
+      <ProfileForm key={profile.email} profile={profile} userName={user.name || ""} />
     </div>
   );
 }

@@ -37,7 +37,7 @@ import { cn } from "@/lib/utils";
 import { categories } from "@/data/dummy";
 import * as projectApi from "@/api/generated/project/project";
 import * as experienceApi from "@/api/generated/experience/experience";
-import type { ProjectStatus } from "@/api/generated/model";
+import type { ProjectStatus } from "@/api/types";
 
 const statusConfig: Record<ProjectStatus, { label: string; color: string; icon: typeof Clock }> = {
   recruiting: {
@@ -107,7 +107,7 @@ function ExperienceSection({ projectId }: { projectId: number }) {
   };
 
   const handleSummarize = () => {
-    if (!existing) return;
+    if (!existing || typeof existing.id === 'undefined') return;
     summarizeMutation.mutate({ id: existing.id });
   };
 
@@ -337,46 +337,47 @@ export default function MyProjectsPage() {
       ) : (
         <div className="space-y-6">
           {myProjects.map((mp) => {
-            const status = statusConfig[mp.status];
+            const currentStatus = mp.status || "recruiting";
+            const status = statusConfig[currentStatus];
             const StatusIcon = status.icon;
-            const canRecord = mp.status !== "recruiting";
-            const next = nextStatus[mp.status];
+            const canRecord = currentStatus !== "recruiting";
+            const next = nextStatus[currentStatus];
 
             return (
-              <Card key={mp.project.id}>
+              <Card key={mp.project?.id}>
                 <CardHeader>
                   <div className="flex items-start justify-between gap-4">
                     <div className="flex-1">
                       <div className="flex items-center gap-2 flex-wrap">
-                        <CardTitle>{mp.project.title}</CardTitle>
+                        <CardTitle>{mp.project?.title}</CardTitle>
                         <Badge className={status.color}>
                           <StatusIcon size={12} className="mr-1" />
                           {status.label}
                         </Badge>
-                        <Badge variant="secondary">{mp.project.category}</Badge>
+                        <Badge variant="secondary">{mp.project?.category}</Badge>
                         {mp.isOwner && (
                           <Badge variant="outline">내가 생성</Badge>
                         )}
                       </div>
                       <div className="mt-2 flex flex-wrap gap-1.5">
-                        {mp.project.skills.map((skill) => (
-                          <Badge key={skill} variant="outline" className="text-xs font-normal">
-                            {skill}
+                        {mp.project?.skills?.map((skill) => (
+                          <Badge key={skill as string} variant="outline" className="text-xs font-normal">
+                            {skill as string}
                           </Badge>
                         ))}
                       </div>
                       <p className="mt-2 text-xs text-muted-foreground">참여일: {mp.joinedAt}</p>
                     </div>
-                    {mp.isOwner && next && (
+                    {mp.isOwner && next && mp.project?.id && (
                       <Button
                         size="sm"
                         variant="outline"
                         disabled={statusMutation.isPending}
                         onClick={() =>
-                          statusMutation.mutate({ id: mp.project.id, data: { status: next } })
+                          statusMutation.mutate({ id: mp.project!.id!, data: { status: next } })
                         }
                       >
-                        {nextStatusLabel[mp.status]}
+                        {nextStatusLabel[currentStatus]}
                       </Button>
                     )}
                   </div>
@@ -393,12 +394,12 @@ export default function MyProjectsPage() {
                         매칭이 완료되어 프로젝트가 &quot;진행&quot; 상태로 변경되면 경험 기록을 작성할 수 있습니다.
                       </p>
                       <p className="mt-3 text-xs text-amber-500">
-                        현재 {mp.project.currentMembers}/{mp.project.maxMembers}명 참여 중
-                        {mp.project.deadline && ` · 마감일: ${mp.project.deadline}`}
+                        현재 {mp.project?.currentMembers}/{mp.project?.maxMembers}명 참여 중
+                        {mp.project?.deadline && ` · 마감일: ${mp.project.deadline}`}
                       </p>
                     </div>
                   ) : (
-                    <ExperienceSection projectId={mp.project.id} />
+                    <ExperienceSection projectId={mp.project?.id || 0} />
                   )}
                 </CardContent>
               </Card>

@@ -37,7 +37,7 @@ export default function ProjectDetailPage({
   const applyMutation = projectApi.useApplyProject();
   const [showJoinModal, setShowJoinModal] = useState(false);
 
-  const joined = myProjects?.some((mp) => mp.project.id === projectId) ?? false;
+  const joined = myProjects?.some((mp) => mp.project?.id === projectId) ?? false;
 
   if (isLoading) {
     return (
@@ -55,9 +55,10 @@ export default function ProjectDetailPage({
     );
   }
 
-  const isFull = project.currentMembers >= project.maxMembers;
+  const isFull = (project.currentMembers ?? 0) >= (project.maxMembers ?? 0);
 
   const handleJoin = () => {
+    if (!project.id) return;
     applyMutation.mutate({ id: project.id }, {
       onSuccess: () => setShowJoinModal(true),
     });
@@ -121,9 +122,9 @@ export default function ProjectDetailPage({
             </CardHeader>
             <CardContent>
               <div className="flex flex-wrap gap-2">
-                {project.skills.map((skill) => (
-                  <Badge key={skill} variant="secondary" className="text-sm">
-                    {skill}
+                {project.skills?.map((skill) => (
+                  <Badge key={skill as string} variant="secondary" className="text-sm">
+                    {skill as string}
                   </Badge>
                 ))}
               </div>
@@ -140,7 +141,7 @@ export default function ProjectDetailPage({
               <div className="flex items-center gap-3 text-sm">
                 <Users size={16} className="text-muted-foreground" />
                 <span>
-                  {project.currentMembers}/{project.maxMembers}명 참여 중
+                  {project.currentMembers ?? 0}/{project.maxMembers ?? 0}명 참여 중
                 </span>
               </div>
               {project.deadline && (
