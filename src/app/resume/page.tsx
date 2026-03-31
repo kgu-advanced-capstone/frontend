@@ -8,11 +8,15 @@ import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import { useResume, useGenerateResume } from "@/api/hooks/useResume";
+import * as resumeApi from "@/api/generated/resume/resume";
 
 export default function ResumePage() {
-  const { data: resume, isLoading } = useResume();
-  const generateMutation = useGenerateResume();
+  const { data: resume, isLoading } = resumeApi.useGetResume({
+    query: {
+      select: (res) => res.data,
+    }
+  });
+  const generateMutation = resumeApi.useGenerate();
 
   const hasSummaries =
     resume && resume.summarizedExperiences && resume.summarizedExperiences.length > 0;

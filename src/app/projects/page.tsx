@@ -15,7 +15,7 @@ import {
 } from "@/components/ui/dialog";
 import ProjectCard from "@/components/ProjectCard";
 import { categories } from "@/data/dummy";
-import { useProjects, useApplyProject, useMyProjects } from "@/api/hooks/useProjects";
+import * as projectApi from "@/api/generated/project/project";
 
 export default function ProjectsPage() {
   const [category, setCategory] = useState("전체");
@@ -24,15 +24,23 @@ export default function ProjectsPage() {
   const [confirmProject, setConfirmProject] = useState<{ id: number; title: string } | null>(null);
   const [joinedProject, setJoinedProject] = useState<string | null>(null);
 
-  const { data, isLoading } = useProjects({
+  const { data, isLoading } = projectApi.useGetProjects({
     category: category === "전체" ? undefined : category,
     search: search || undefined,
     page,
     limit: 12,
+  }, {
+    query: {
+      select: (res) => res.data,
+    }
   });
 
-  const { data: myProjects } = useMyProjects();
-  const applyMutation = useApplyProject();
+  const { data: myProjects } = projectApi.useGetMyProjects({
+    query: {
+      select: (res) => res.data,
+    }
+  });
+  const applyMutation = projectApi.useApplyProject();
 
   const joinedIds = new Set(myProjects?.map((mp) => mp.project.id) ?? []);
 
@@ -49,7 +57,7 @@ export default function ProjectsPage() {
 
   const handleConfirmJoin = () => {
     if (!confirmProject) return;
-    applyMutation.mutate(confirmProject.id, {
+    applyMutation.mutate({ id: confirmProject.id }, {
       onSuccess: () => {
         setJoinedProject(confirmProject.title);
         setConfirmProject(null);

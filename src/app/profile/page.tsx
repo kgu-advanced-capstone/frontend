@@ -20,8 +20,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useAuth } from "@/contexts/AuthContext";
-import { useProfile, useUpdateProfile } from "@/api/hooks/useProfile";
-import type { ProfileResponse } from "@/api/types";
+import * as profileApi from "@/api/generated/profile/profile";
+import type { ProfileResponse } from "@/api/generated/model";
 
 interface FormState {
   name: string;
@@ -78,7 +78,7 @@ function validateForm(form: FormState): FormErrors {
 }
 
 function ProfileForm({ profile, userName }: { profile: ProfileResponse; userName: string }) {
-  const updateMutation = useUpdateProfile();
+  const updateMutation = profileApi.useUpdateProfile();
   const snapshot = profileToForm(profile);
 
   const [form, setForm] = useState<FormState>(snapshot);
@@ -115,11 +115,13 @@ function ProfileForm({ profile, userName }: { profile: ProfileResponse; userName
 
     setErrors({});
     updateMutation.mutate({
-      name: form.name.trim() || undefined,
-      phone: form.phone.trim() || undefined,
-      github: form.github.trim() || undefined,
-      blog: form.blog.trim() || undefined,
-      profileImage: form.profileImage.trim() || undefined,
+      data: {
+        name: form.name.trim() || undefined,
+        phone: form.phone.trim() || undefined,
+        github: form.github.trim() || undefined,
+        blog: form.blog.trim() || undefined,
+        profileImage: form.profileImage.trim() || undefined,
+      }
     });
   };
 
@@ -330,7 +332,11 @@ function ProfileForm({ profile, userName }: { profile: ProfileResponse; userName
 export default function ProfilePage() {
   const { user } = useAuth();
   const router = useRouter();
-  const { data: profile, isLoading, error: profileError } = useProfile();
+  const { data: profile, isLoading, error: profileError } = profileApi.useGetProfile({
+    query: {
+      select: (res) => res.data,
+    }
+  });
 
   if (!user) {
     router.push("/login");

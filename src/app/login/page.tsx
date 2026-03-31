@@ -107,20 +107,6 @@ export default function LoginPage() {
               회원가입
             </Link>
           </p>
-
-          <div className="mt-6 rounded-lg border bg-muted/50 p-4">
-            <p className="mb-2 text-xs font-medium text-muted-foreground">
-              테스트 계정
-            </p>
-            <div className="space-y-1 text-xs text-muted-foreground">
-              <p>
-                <span className="font-mono">test@buildi.com</span> / <span className="font-mono">1234</span> (홍길동)
-              </p>
-              <p>
-                <span className="font-mono">user@buildi.com</span> / <span className="font-mono">1234</span> (김빌디)
-              </p>
-            </div>
-          </div>
         </CardContent>
       </Card>
     </div>

@@ -15,7 +15,7 @@ import {
   DialogDescription,
   DialogFooter,
 } from "@/components/ui/dialog";
-import { useProject, useApplyProject, useMyProjects } from "@/api/hooks/useProjects";
+import * as projectApi from "@/api/generated/project/project";
 
 export default function ProjectDetailPage({
   params,
@@ -24,9 +24,17 @@ export default function ProjectDetailPage({
 }) {
   const { id } = use(params);
   const projectId = Number(id);
-  const { data: project, isLoading } = useProject(projectId);
-  const { data: myProjects } = useMyProjects();
-  const applyMutation = useApplyProject();
+  const { data: project, isLoading } = projectApi.useGetProject(projectId, {
+    query: {
+      select: (res) => res.data,
+    }
+  });
+  const { data: myProjects } = projectApi.useGetMyProjects({
+    query: {
+      select: (res) => res.data,
+    }
+  });
+  const applyMutation = projectApi.useApplyProject();
   const [showJoinModal, setShowJoinModal] = useState(false);
 
   const joined = myProjects?.some((mp) => mp.project.id === projectId) ?? false;
@@ -50,7 +58,7 @@ export default function ProjectDetailPage({
   const isFull = project.currentMembers >= project.maxMembers;
 
   const handleJoin = () => {
-    applyMutation.mutate(project.id, {
+    applyMutation.mutate({ id: project.id }, {
       onSuccess: () => setShowJoinModal(true),
     });
   };

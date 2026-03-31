@@ -14,7 +14,7 @@ import {
 } from "@/components/ui/popover";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useAuth } from "@/contexts/AuthContext";
-import { useNotifications, useMarkAsRead, useMarkAllAsRead } from "@/api/hooks/useNotifications";
+import * as notificationApi from "@/api/generated/notification/notification";
 import { cn } from "@/lib/utils";
 
 const navLinks = [
@@ -26,12 +26,22 @@ const navLinks = [
 export default function Navbar() {
   const pathname = usePathname();
   const { user, logout } = useAuth();
-  const { data: notifications = [] } = useNotifications();
-  const markAsRead = useMarkAsRead();
-  const markAllAsRead = useMarkAllAsRead();
+  const { data: notifications = [] } = notificationApi.useGetNotifications({
+    query: {
+      select: (res) => res.data,
+      enabled: !!user, // 로그인한 경우에만 알림 조회
+    }
+  });
+  const markAsRead = notificationApi.useMarkAsRead();
+  const markAllAsRead = notificationApi.useMarkAllAsRead();
   const [mobileOpen, setMobileOpen] = useState(false);
 
   const unreadCount = notifications.filter((n) => !n.read).length;
+
+  const handleLogout = async () => {
+    await logout();
+    setMobileOpen(false);
+  };
 
   return (
     <nav className="fixed top-0 z-50 w-full border-b bg-background/80 backdrop-blur-md">
@@ -94,7 +104,7 @@ export default function Navbar() {
                           "w-full px-4 py-3 text-left text-sm transition-colors hover:bg-muted/50",
                           !n.read && "bg-primary/5"
                         )}
-                        onClick={() => markAsRead.mutate(n.id)}
+                        onClick={() => markAsRead.mutate({ id: n.id })}
                       >
                         <p className={cn("leading-snug", !n.read && "font-medium")}>
                           {n.message}
@@ -123,7 +133,7 @@ export default function Navbar() {
                 </Avatar>
                 <span className="text-sm font-medium">{user.name}</span>
               </Link>
-              <Button size="sm" variant="ghost" onClick={logout}>
+              <Button size="sm" variant="ghost" onClick={handleLogout}>
                 <LogOut size={16} />
               </Button>
             </div>
@@ -185,10 +195,7 @@ export default function Navbar() {
                 <Button
                   size="sm"
                   variant="ghost"
-                  onClick={() => {
-                    logout();
-                    setMobileOpen(false);
-                  }}
+                  onClick={handleLogout}
                 >
                   <LogOut size={16} />
                   로그아웃
