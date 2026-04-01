@@ -39,12 +39,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       // 로그인 성공 시 세션 쿠키가 생성되므로, me 정보를 다시 가져옴
       await refetch();
       return { success: true };
-    } catch (err: any) {
-      return { 
-        success: false, 
-        error: err.response?.status === 401 
-          ? "이메일 또는 비밀번호가 올바르지 않습니다." 
-          : "로그인 중 오류가 발생했습니다." 
+    } catch (err) {
+      const e = err as { response?: { status?: number } };
+      return {
+        success: false,
+        error: e.response?.status === 401
+          ? "이메일 또는 비밀번호가 올바르지 않습니다."
+          : "로그인 중 오류가 발생했습니다."
       };
     }
   };
@@ -54,12 +55,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       await registerMutation.mutateAsync({ data: { name, email, password } });
       await refetch();
       return { success: true };
-    } catch (err: any) {
-      return { 
-        success: false, 
-        error: err.response?.status === 409 
-          ? "이미 존재하는 이메일입니다." 
-          : "회원가입에 실패했습니다." 
+    } catch (err) {
+      const e = err as { response?: { status?: number } };
+      return {
+        success: false,
+        error: e.response?.status === 409
+          ? "이미 존재하는 이메일입니다."
+          : "회원가입에 실패했습니다."
       };
     }
   };
