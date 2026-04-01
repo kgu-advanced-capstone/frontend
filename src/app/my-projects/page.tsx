@@ -35,17 +35,9 @@ import {
 import { buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { categories } from "@/data/dummy";
+import * as projectApi from "@/api/generated/project/project";
+import * as experienceApi from "@/api/generated/experience/experience";
 import type { ProjectStatus } from "@/api/types";
-import {
-  useMyProjects,
-  useCreateProject,
-  useUpdateProjectStatus,
-} from "@/api/hooks/useProjects";
-import {
-  useExperiences,
-  useUpsertExperience,
-  useSummarizeExperience,
-} from "@/api/hooks/useExperiences";
 
 const statusConfig: Record<ProjectStatus, { label: string; color: string; icon: typeof Clock }> = {
   recruiting: {
@@ -88,9 +80,13 @@ const defaultCreateForm = {
 
 /** 개별 프로젝트의 경험 기록 섹션 */
 function ExperienceSection({ projectId }: { projectId: number }) {
-  const { data: experiences = [] } = useExperiences(projectId);
-  const upsertMutation = useUpsertExperience(projectId);
-  const summarizeMutation = useSummarizeExperience();
+  const { data: experiences = [] } = experienceApi.useGetByProject(projectId, {
+    query: {
+      select: (res) => res.data,
+    }
+  });
+  const upsertMutation = experienceApi.useUpsert();
+  const summarizeMutation = experienceApi.useSummarize();
 
   const existing = experiences[0];
   const [content, setContent] = useState(existing?.content ?? "");
@@ -107,12 +103,12 @@ function ExperienceSection({ projectId }: { projectId: number }) {
 
   const handleSaveExperience = () => {
     if (!content.trim()) return;
-    upsertMutation.mutate({ content });
+    upsertMutation.mutate({ projectId, data: { content } });
   };
 
   const handleSummarize = () => {
-    if (!existing) return;
-    summarizeMutation.mutate(existing.id);
+    if (!existing || typeof existing.id === 'undefined') return;
+    summarizeMutation.mutate({ id: existing.id });
   };
 
   const handleCopy = async (text: string) => {
@@ -176,7 +172,7 @@ function ExperienceSection({ projectId }: { projectId: number }) {
       </div>
 
       {/* AI 요약 결과 */}
-      {(existing?.aiSummary || summarizeMutation.data?.aiSummary) && (
+      {(existing?.aiSummary || summarizeMutation.data?.data?.aiSummary) && (
         <div className="rounded-lg border bg-primary/5 p-6">
           <div className="mb-3 flex items-center justify-between">
             <div className="flex items-center gap-2 text-sm font-medium text-primary">
@@ -190,7 +186,7 @@ function ExperienceSection({ projectId }: { projectId: number }) {
                   size="sm"
                   onClick={() => {
                     // 첨삭 저장 — 수정된 내용을 경험으로 다시 저장
-                    upsertMutation.mutate({ content: editDraft });
+                    upsertMutation.mutate({ projectId, data: { content: editDraft } });
                     setIsEditing(false);
                     setSavedSummary(true);
                     setTimeout(() => setSavedSummary(false), 2000);
@@ -205,7 +201,7 @@ function ExperienceSection({ projectId }: { projectId: number }) {
                   size="sm"
                   onClick={() => {
                     setEditDraft(
-                      summarizeMutation.data?.aiSummary ?? existing?.aiSummary ?? ""
+                      summarizeMutation.data?.data?.aiSummary ?? existing?.aiSummary ?? ""
                     );
                     setIsEditing(true);
                   }}
@@ -219,7 +215,7 @@ function ExperienceSection({ projectId }: { projectId: number }) {
                 size="sm"
                 onClick={() =>
                   handleCopy(
-                    summarizeMutation.data?.aiSummary ?? existing?.aiSummary ?? ""
+                    summarizeMutation.data?.data?.aiSummary ?? existing?.aiSummary ?? ""
                   )
                 }
               >
@@ -245,7 +241,7 @@ function ExperienceSection({ projectId }: { projectId: number }) {
             />
           ) : (
             <div className="whitespace-pre-wrap text-sm leading-relaxed">
-              {summarizeMutation.data?.aiSummary ?? existing?.aiSummary}
+              {summarizeMutation.data?.data?.aiSummary ?? existing?.aiSummary}
               {savedSummary && (
                 <p className="mt-3 flex items-center gap-1 text-xs text-green-600">
                   <Check size={12} />
@@ -261,9 +257,13 @@ function ExperienceSection({ projectId }: { projectId: number }) {
 }
 
 export default function MyProjectsPage() {
-  const { data: myProjects = [], isLoading } = useMyProjects();
-  const createMutation = useCreateProject();
-  const statusMutation = useUpdateProjectStatus();
+  const { data: myProjects = [], isLoading } = projectApi.useGetMyProjects({
+    query: {
+      select: (res) => res.data,
+    }
+  });
+  const createMutation = projectApi.useCreateProject();
+  const statusMutation = projectApi.useUpdateStatus();
 
   const [showCreate, setShowCreate] = useState(false);
   const [createForm, setCreateForm] = useState(defaultCreateForm);
@@ -272,15 +272,17 @@ export default function MyProjectsPage() {
     if (!createForm.title.trim()) return;
     createMutation.mutate(
       {
-        title: createForm.title,
-        description: createForm.description || undefined,
-        skills: createForm.skills
-          .split(",")
-          .map((s) => s.trim())
-          .filter(Boolean),
-        maxMembers: parseInt(createForm.maxMembers) || 4,
-        deadline: createForm.deadline || undefined,
-        category: createForm.category,
+        data: {
+          title: createForm.title,
+          description: createForm.description || undefined,
+          skills: createForm.skills
+            .split(",")
+            .map((s) => s.trim())
+            .filter(Boolean),
+          maxMembers: parseInt(createForm.maxMembers) || 4,
+          deadline: createForm.deadline || undefined,
+          category: createForm.category,
+        }
       },
       {
         onSuccess: () => {
@@ -335,46 +337,47 @@ export default function MyProjectsPage() {
       ) : (
         <div className="space-y-6">
           {myProjects.map((mp) => {
-            const status = statusConfig[mp.status];
+            const currentStatus = mp.status || "recruiting";
+            const status = statusConfig[currentStatus];
             const StatusIcon = status.icon;
-            const canRecord = mp.status !== "recruiting";
-            const next = nextStatus[mp.status];
+            const canRecord = currentStatus !== "recruiting";
+            const next = nextStatus[currentStatus];
 
             return (
-              <Card key={mp.project.id}>
+              <Card key={mp.project?.id}>
                 <CardHeader>
                   <div className="flex items-start justify-between gap-4">
                     <div className="flex-1">
                       <div className="flex items-center gap-2 flex-wrap">
-                        <CardTitle>{mp.project.title}</CardTitle>
+                        <CardTitle>{mp.project?.title}</CardTitle>
                         <Badge className={status.color}>
                           <StatusIcon size={12} className="mr-1" />
                           {status.label}
                         </Badge>
-                        <Badge variant="secondary">{mp.project.category}</Badge>
+                        <Badge variant="secondary">{mp.project?.category}</Badge>
                         {mp.isOwner && (
                           <Badge variant="outline">내가 생성</Badge>
                         )}
                       </div>
                       <div className="mt-2 flex flex-wrap gap-1.5">
-                        {mp.project.skills.map((skill) => (
-                          <Badge key={skill} variant="outline" className="text-xs font-normal">
-                            {skill}
+                        {mp.project?.skills?.map((skill) => (
+                          <Badge key={skill as string} variant="outline" className="text-xs font-normal">
+                            {skill as string}
                           </Badge>
                         ))}
                       </div>
                       <p className="mt-2 text-xs text-muted-foreground">참여일: {mp.joinedAt}</p>
                     </div>
-                    {mp.isOwner && next && (
+                    {mp.isOwner && next && mp.project?.id && (
                       <Button
                         size="sm"
                         variant="outline"
                         disabled={statusMutation.isPending}
                         onClick={() =>
-                          statusMutation.mutate({ id: mp.project.id, status: next })
+                          statusMutation.mutate({ id: mp.project!.id!, data: { status: next } })
                         }
                       >
-                        {nextStatusLabel[mp.status]}
+                        {nextStatusLabel[currentStatus]}
                       </Button>
                     )}
                   </div>
@@ -391,12 +394,12 @@ export default function MyProjectsPage() {
                         매칭이 완료되어 프로젝트가 &quot;진행&quot; 상태로 변경되면 경험 기록을 작성할 수 있습니다.
                       </p>
                       <p className="mt-3 text-xs text-amber-500">
-                        현재 {mp.project.currentMembers}/{mp.project.maxMembers}명 참여 중
-                        {mp.project.deadline && ` · 마감일: ${mp.project.deadline}`}
+                        현재 {mp.project?.currentMembers}/{mp.project?.maxMembers}명 참여 중
+                        {mp.project?.deadline && ` · 마감일: ${mp.project.deadline}`}
                       </p>
                     </div>
                   ) : (
-                    <ExperienceSection projectId={mp.project.id} />
+                    <ExperienceSection projectId={mp.project?.id || 0} />
                   )}
                 </CardContent>
               </Card>

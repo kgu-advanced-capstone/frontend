@@ -20,8 +20,8 @@ npm run lint
 # 테스트 실행
 npm run test
 
-# 테스트 워치 모드
-npm run test:watch
+# API 훅 생성 (Swagger 기반)
+npm run api:generate
 ```
 
 개발 서버 실행 후: `http://localhost:3000`
@@ -38,105 +38,55 @@ Next.js 16 (App Router) + React 19 + TypeScript 프로젝트.
 | 프레임워크 | Next.js 16.1.6 (App Router) |
 | UI 라이브러리 | React 19, Shadcn UI, Tailwind CSS 4 |
 | 서버 상태 관리 | TanStack React Query v5 |
-| HTTP 클라이언트 | Axios (쿠키 기반 세션 인증, `withCredentials: true`) |
-| 아이콘 | Lucide React |
-| 테스트 | Vitest + Testing Library + MSW (Mock Service Worker) |
+| HTTP 클라이언트 | Axios (Orval 자동 생성 훅 사용) |
+| 자동 생성 | Orval (OpenAPI 3.1) |
 
 ### 디렉토리 구조
 
 ```
 src/
 ├── app/                  ← Next.js App Router 페이지
-│   ├── login/
-│   ├── register/
-│   ├── profile/
-│   ├── projects/
-│   ├── my-projects/
-│   ├── resume/
-│   ├── layout.tsx        ← 루트 레이아웃 (AuthProvider, QueryProvider)
-│   └── page.tsx          ← 홈페이지
-├── api/                  ← API 클라이언트 및 React Query 훅
-│   ├── client.ts         ← Axios 인스턴스 (baseURL: "/api", withCredentials: true)
-│   ├── types.ts          ← 요청/응답 타입 정의
-│   └── hooks/            ← React Query 커스텀 훅
-│       ├── useAuth.ts
-│       ├── useProfile.ts
-│       ├── useProjects.ts
-│       ├── useExperiences.ts
-│       ├── useResume.ts
-│       └── useNotifications.ts
+├── api/                  ← API 클라이언트 및 Orval 생성 코드
+│   ├── client.ts         ← Axios 인스턴스 (baseURL: "", withCredentials: true)
+│   ├── generated/        ← Orval 자동 생성 훅 및 모델 (수정 금지)
+│   ├── mutator/          ← Orval 커스텀 Axios mutator
+│   └── types.ts          ← 생성된 모델 export
 ├── components/           ← 공용 컴포넌트
-│   ├── Navbar.tsx
-│   ├── Footer.tsx
-│   ├── ProjectCard.tsx
-│   ├── QueryProvider.tsx ← React Query Provider (staleTime: 1분, retry: 1)
-│   └── ui/               ← Shadcn UI 컴포넌트
-├── contexts/             ← React Context
-│   ├── AuthContext.tsx    ← 인증 상태 (login, register, logout)
-│   └── ProjectContext.tsx
-├── lib/
-│   └── utils.ts          ← cn() 유틸리티 (clsx + tailwind-merge)
-├── __tests__/            ← 통합 테스트
-│   ├── setup.ts          ← MSW 서버 초기화
-│   ├── utils.tsx          ← renderHookWithClient 등 테스트 유틸
-│   └── mocks/
-│       ├── handlers.ts   ← MSW 핸들러 (인메모리 DB)
-│       └── server.ts
-└── middleware.ts         ← 개발 환경 쿠키 Domain/Secure 속성 제거
+├── contexts/             ← React Context (AuthContext 등)
 ```
 
-### 핵심 설계 결정
+### API 사용 패턴
 
-- **인증:** 세션 기반 쿠키 인증 (JWT 아님). `withCredentials: true`로 모든 요청에 쿠키 자동 전송.
-- **API 프록시:** `next.config.ts`의 rewrites로 `/api/*` → `https://pcserver.cloud/api/*` 프록시. 프론트엔드 코드에서 백엔드 URL을 직접 참조하지 않는다.
-- **상태 관리:** 서버 상태는 React Query, 클라이언트 상태는 React Context. 별도 전역 상태 라이브러리(Redux 등) 없음.
-- **컴포넌트:** Shadcn UI 기반. 새 UI 컴포넌트가 필요하면 `npx shadcn@latest add <component>` 사용.
-- **경로 별칭:** `@/*` → `src/*` (tsconfig.json paths)
-
-### API 훅 패턴
+자동 생성된 Orval 훅을 직접 사용한다. 모든 훅은 `{ data, status, headers }` 형태의 객체를 반환하므로, `select` 옵션을 사용하여 필요한 데이터만 추출하는 것을 권장한다.
 
 ```typescript
+import * as profileApi from "@/api/generated/profile/profile";
+
 // 조회: useQuery
-export function useProfile() {
-  return useQuery({
-    queryKey: profileKeys.me,
-    queryFn: async () => {
-      const { data } = await client.get<ProfileResponse>("/profile");
-      return data;
-    },
-  });
-}
+const { data: profile } = profileApi.useGetProfile({
+  query: {
+    select: (res) => res.data,
+  }
+});
 
-// 변경: useMutation + invalidateQueries
-export function useUpdateProfile() {
-  const qc = useQueryClient();
-  return useMutation({
-    mutationFn: async (body: UpdateProfileRequest) => {
-      const { data } = await client.patch<ProfileResponse>("/profile", body);
-      return data;
-    },
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: profileKeys.me });
-    },
-  });
-}
+// 변경: useMutation
+const updateMutation = profileApi.useUpdateProfile();
+updateMutation.mutate({
+  data: { name: "새 이름" } // body 데이터는 data 필드에 전달
+});
 ```
-
-- 새 API 훅 추가 시 `src/api/hooks/`에 파일 생성, `src/api/types.ts`에 타입 정의.
-- mutation 성공 시 관련 쿼리 `invalidateQueries`로 캐시 갱신.
 
 ## 코드 배치 규칙
 
 | 대상 | 위치 |
 |---|---|
 | 새 페이지 | `src/app/<route>/page.tsx` |
-| API 훅 (React Query) | `src/api/hooks/` |
-| 요청/응답 타입 | `src/api/types.ts` |
+| API 훅 (자동 생성) | `src/api/generated/` (수정 금지) |
+| 커스텀 API 로직 | `src/api/` (필요시 추가) |
 | 공용 컴포넌트 | `src/components/` |
 | Shadcn UI 컴포넌트 | `src/components/ui/` |
 | React Context | `src/contexts/` |
 | 테스트 | `src/__tests__/` |
-| MSW 핸들러 | `src/__tests__/mocks/handlers.ts` |
 
 ## 테스트
 

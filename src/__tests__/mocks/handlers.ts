@@ -23,7 +23,8 @@ let users: UserResponse[] = [];
 let currentUser: UserResponse | null = null;
 let nextUserId = 1;
 
-let profile: ProfileResponse = {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+let profile: any = {
   name: "",
   email: "",
   phone: null,
@@ -87,7 +88,7 @@ export const handlers = [
       id: nextUserId++,
       email: body.email,
       name: body.name,
-      profileImage: null,
+      profileImage: undefined,
     };
     users.push(user);
     currentUser = user;
@@ -115,7 +116,7 @@ export const handlers = [
         id: nextUserId++,
         email: body.email,
         name: body.email === "test@buildi.com" ? "홍길동" : "김빌디",
-        profileImage: null,
+        profileImage: undefined,
       };
       users.push(newUser);
       currentUser = newUser;
@@ -128,7 +129,7 @@ export const handlers = [
     }
 
     currentUser = user;
-    profile = { ...profile, name: user.name, email: user.email };
+    profile = { phone: null, github: null, blog: null, profileImage: null, name: user.name, email: user.email };
     return HttpResponse.json(user);
   }),
 
@@ -153,11 +154,36 @@ export const handlers = [
     return HttpResponse.json(profile);
   }),
 
-  // PATCH /profile
+  // PATCH /profile (Multipart/form-data)
   http.patch(`${BASE}/profile`, async ({ request }) => {
-    const body = (await request.json()) as UpdateProfileRequest;
-    profile = { ...profile, ...body };
-    return HttpResponse.json(profile);
+    try {
+      const formData = await request.formData();
+      const requestPart = formData.get("request");
+      const requestJson =
+        typeof requestPart === "string"
+          ? requestPart
+          : await new Response(requestPart as Blob).text();
+      const body = JSON.parse(requestJson) as UpdateProfileRequest;
+      const profileImage = formData.get("profileImage") as File | null;
+
+      profile = { ...profile, ...body };
+
+      if (profileImage) {
+        profile.profileImage = `https://cdn.example.com/profile/${profileImage.name}`;
+      }
+
+      // /me에서도 최신 profileImage가 반영되도록 currentUser 동기화
+      if (currentUser) {
+        currentUser = { ...currentUser, name: profile.name, profileImage: profile.profileImage };
+        const idx = users.findIndex((u) => u.id === currentUser!.id);
+        if (idx !== -1) users[idx] = currentUser;
+      }
+
+      return HttpResponse.json(profile);
+    } catch (e) {
+      console.error("[MSW PATCH /profile error]", e);
+      return HttpResponse.json({ message: "Bad Request" }, { status: 400 });
+    }
   }),
 
   // ─── Projects ───
@@ -175,7 +201,7 @@ export const handlers = [
     if (search)
       filtered = filtered.filter(
         (p) =>
-          p.title.includes(search) ||
+          (p.title && p.title.includes(search)) ||
           (p.description && p.description.includes(search))
       );
 
@@ -209,12 +235,12 @@ export const handlers = [
     const project: ProjectDetailResponse = {
       id: nextProjectId++,
       title: body.title,
-      description: body.description || null,
+      description: body.description ?? undefined,
       category: body.category,
       skills: body.skills || [],
       currentMembers: 1,
       maxMembers: body.maxMembers || 4,
-      deadline: body.deadline || null,
+      deadline: body.deadline ?? undefined,
       author: currentUser?.name || "Unknown",
       createdAt: "2026-03-30",
     };
@@ -246,7 +272,9 @@ export const handlers = [
     if (!project) {
       return HttpResponse.json({ message: "Not Found" }, { status: 404 });
     }
-    project.currentMembers += 1;
+    if (project.currentMembers !== undefined) {
+      project.currentMembers += 1;
+    }
     myProjects.push({
       project,
       joinedAt: "2026-03-30",
@@ -261,7 +289,7 @@ export const handlers = [
   http.patch(`${BASE}/projects/:id/status`, async ({ params, request }) => {
     const id = Number(params.id);
     const body = (await request.json()) as UpdateProjectStatusRequest;
-    const mp = myProjects.find((m) => m.project.id === id);
+    const mp = myProjects.find((m) => m.project && m.project.id === id);
     if (mp) {
       mp.status = body.status;
     }
@@ -306,7 +334,7 @@ export const handlers = [
     const exp: ExperienceResponse & { projectId: number } = {
       id: nextExpId++,
       content: body.content,
-      aiSummary: null,
+      aiSummary: null as unknown as undefined,
       createdAt: "2026-03-30",
       projectId,
     };
@@ -322,7 +350,9 @@ export const handlers = [
     if (!exp) {
       return HttpResponse.json({ message: "Not Found" }, { status: 404 });
     }
-    exp.aiSummary = `[AI 요약] ${exp.content.slice(0, 50)}`;
+    if (exp.content) {
+      exp.aiSummary = `[AI 요약] ${exp.content.slice(0, 50)}`;
+    }
     const res: AiSummaryResponse = { id: exp.id, aiSummary: exp.aiSummary };
     addNotification("AI 요약이 완료되었습니다.");
     return HttpResponse.json(res);
@@ -337,7 +367,7 @@ export const handlers = [
       .map((e) => {
         const project = projects.find((p) =>
           myProjects.some(
-            (mp) => mp.project.id === p.id && e.projectId === p.id
+            (mp) => mp.project && mp.project.id === p.id && e.projectId === p.id
           )
         );
         return {
@@ -382,3 +412,4 @@ export const handlers = [
     return HttpResponse.json(null, { status: 200 });
   }),
 ];
+

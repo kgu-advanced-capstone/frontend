@@ -2,11 +2,11 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Menu, X, LogOut, User, Bell, CheckCheck } from "lucide-react";
+import { Menu, X, LogOut, Bell, CheckCheck } from "lucide-react";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { buttonVariants } from "@/components/ui/button";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
   Popover,
   PopoverContent,
@@ -14,8 +14,8 @@ import {
 } from "@/components/ui/popover";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useAuth } from "@/contexts/AuthContext";
-import { useNotifications, useMarkAsRead, useMarkAllAsRead } from "@/api/hooks/useNotifications";
-import { cn } from "@/lib/utils";
+import * as notificationApi from "@/api/generated/notification/notification";
+import { cn, getProfileImageUrl } from "@/lib/utils";
 
 const navLinks = [
   { href: "/projects", label: "프로젝트 매칭" },
@@ -26,12 +26,24 @@ const navLinks = [
 export default function Navbar() {
   const pathname = usePathname();
   const { user, logout } = useAuth();
-  const { data: notifications = [] } = useNotifications();
-  const markAsRead = useMarkAsRead();
-  const markAllAsRead = useMarkAllAsRead();
+  const { data: notifications = [] } = notificationApi.useGetNotifications({
+    query: {
+      select: (res) => res.data,
+      enabled: !!user, // 로그인한 경우에만 알림 조회
+    }
+  });
+  const markAsRead = notificationApi.useMarkAsRead();
+  const markAllAsRead = notificationApi.useMarkAllAsRead();
   const [mobileOpen, setMobileOpen] = useState(false);
 
   const unreadCount = notifications.filter((n) => !n.read).length;
+
+  const handleLogout = async () => {
+    await logout();
+    setMobileOpen(false);
+  };
+
+  const profileImageUrl = getProfileImageUrl(user?.profileImage);
 
   return (
     <nav className="fixed top-0 z-50 w-full border-b bg-background/80 backdrop-blur-md">
@@ -94,7 +106,7 @@ export default function Navbar() {
                           "w-full px-4 py-3 text-left text-sm transition-colors hover:bg-muted/50",
                           !n.read && "bg-primary/5"
                         )}
-                        onClick={() => markAsRead.mutate(n.id)}
+                        onClick={() => n.id && markAsRead.mutate({ id: n.id })}
                       >
                         <p className={cn("leading-snug", !n.read && "font-medium")}>
                           {n.message}
@@ -117,13 +129,16 @@ export default function Navbar() {
                 className="flex items-center gap-2 rounded-md px-2 py-1 transition-colors hover:bg-muted"
               >
                 <Avatar className="h-7 w-7">
+                  {profileImageUrl ? (
+                    <AvatarImage src={profileImageUrl} alt={user.name || ""} />
+                  ) : null}
                   <AvatarFallback className="bg-primary/10 text-xs text-primary">
-                    {user.name[0]}
+                    {user.name?.[0] || "U"}
                   </AvatarFallback>
                 </Avatar>
                 <span className="text-sm font-medium">{user.name}</span>
               </Link>
-              <Button size="sm" variant="ghost" onClick={logout}>
+              <Button size="sm" variant="ghost" onClick={handleLogout}>
                 <LogOut size={16} />
               </Button>
             </div>
@@ -177,7 +192,14 @@ export default function Navbar() {
                     : "text-muted-foreground hover:bg-muted"
                 }`}
               >
-                <User size={16} />
+                <Avatar className="h-6 w-6">
+                  {profileImageUrl ? (
+                    <AvatarImage src={profileImageUrl} alt={user.name || ""} />
+                  ) : null}
+                  <AvatarFallback className="bg-primary/10 text-[10px] text-primary">
+                    {user.name?.[0] || "U"}
+                  </AvatarFallback>
+                </Avatar>
                 프로필 수정
               </Link>
               <div className="flex items-center justify-between">
@@ -185,10 +207,7 @@ export default function Navbar() {
                 <Button
                   size="sm"
                   variant="ghost"
-                  onClick={() => {
-                    logout();
-                    setMobileOpen(false);
-                  }}
+                  onClick={handleLogout}
                 >
                   <LogOut size={16} />
                   로그아웃

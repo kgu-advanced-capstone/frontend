@@ -1,7 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { useRouter } from "next/navigation";
+import { useQueryClient } from "@tanstack/react-query";
 import {
   User,
   Mail,
@@ -20,15 +21,18 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useAuth } from "@/contexts/AuthContext";
-import { useProfile, useUpdateProfile } from "@/api/hooks/useProfile";
-import type { ProfileResponse } from "@/api/types";
+import * as authApi from "@/api/generated/auth/auth";
+import * as profileApi from "@/api/generated/profile/profile";
+import type { ProfileResponse } from "@/api/generated/model";
+import { getProfileImageUrl } from "@/lib/utils";
 
 interface FormState {
   name: string;
   phone: string;
   github: string;
   blog: string;
-  profileImage: string;
+  profileImage: string | null; // Preview URL
+  imageFile: File | null;
 }
 
 interface FormErrors {
@@ -36,7 +40,6 @@ interface FormErrors {
   phone?: string;
   github?: string;
   blog?: string;
-  profileImage?: string;
 }
 
 function profileToForm(profile: ProfileResponse): FormState {
@@ -45,7 +48,8 @@ function profileToForm(profile: ProfileResponse): FormState {
     phone: profile.phone || "",
     github: profile.github || "",
     blog: profile.blog || "",
-    profileImage: profile.profileImage || "",
+    profileImage: profile.profileImage || null,
+    imageFile: null,
   };
 }
 
@@ -70,37 +74,58 @@ function validateForm(form: FormState): FormErrors {
     errors.blog = "URL 형식으로 입력해주세요. (https://...)";
   }
 
-  if (form.profileImage && !/^https?:\/\/.+/.test(form.profileImage)) {
-    errors.profileImage = "URL 형식으로 입력해주세요. (https://...)";
-  }
-
   return errors;
 }
 
 function ProfileForm({ profile, userName }: { profile: ProfileResponse; userName: string }) {
-  const updateMutation = useUpdateProfile();
+  const qc = useQueryClient();
+  const updateMutation = profileApi.useUpdateProfile({
+    mutation: {
+      onSuccess: (res) => {
+        // 프로필 이미지가 변경될 수 있으므로 /me 캐시 갱신
+        if (res.status === 200) {
+          qc.invalidateQueries({ queryKey: authApi.getMeQueryKey() });
+        }
+      },
+    },
+  });
   const snapshot = profileToForm(profile);
 
   const [form, setForm] = useState<FormState>(snapshot);
   const [errors, setErrors] = useState<FormErrors>({});
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const isDirty =
     form.name !== snapshot.name ||
     form.phone !== snapshot.phone ||
     form.github !== snapshot.github ||
     form.blog !== snapshot.blog ||
-    form.profileImage !== snapshot.profileImage;
+    form.imageFile !== null;
 
-  const updateField = (field: keyof FormState, value: string) => {
+  const updateField = (field: keyof FormState, value: string | File | null) => {
     setForm((prev) => ({ ...prev, [field]: value }));
-    if (errors[field]) {
+    if (field in errors && errors[field as keyof FormErrors]) {
       setErrors((prev) => ({ ...prev, [field]: undefined }));
+    }
+  };
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      updateField("imageFile", file);
+      // 로컬 미리보기 URL 생성
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        updateField("profileImage", reader.result as string);
+      };
+      reader.readAsDataURL(file);
     }
   };
 
   const handleReset = () => {
     setForm(snapshot);
     setErrors({});
+    if (fileInputRef.current) fileInputRef.current.value = "";
     updateMutation.reset();
   };
 
@@ -115,13 +140,19 @@ function ProfileForm({ profile, userName }: { profile: ProfileResponse; userName
 
     setErrors({});
     updateMutation.mutate({
-      name: form.name.trim() || undefined,
-      phone: form.phone.trim() || undefined,
-      github: form.github.trim() || undefined,
-      blog: form.blog.trim() || undefined,
-      profileImage: form.profileImage.trim() || undefined,
+      data: {
+        request: {
+          name: form.name.trim() || undefined,
+          phone: form.phone.trim() || undefined,
+          github: form.github.trim() || undefined,
+          blog: form.blog.trim() || undefined,
+        },
+        profileImage: form.imageFile || undefined,
+      }
     });
   };
+
+  const profileImageUrl = getProfileImageUrl(form.profileImage);
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
@@ -140,36 +171,41 @@ function ProfileForm({ profile, userName }: { profile: ProfileResponse; userName
         </CardHeader>
         <CardContent className="flex items-center gap-6">
           <Avatar className="h-20 w-20">
-            {form.profileImage ? (
-              <AvatarImage src={form.profileImage} alt={form.name} />
+            {profileImageUrl ? (
+              <AvatarImage src={profileImageUrl} alt={form.name} />
             ) : null}
             <AvatarFallback className="bg-primary/10 text-2xl text-primary">
               {form.name?.[0] || userName[0]}
             </AvatarFallback>
           </Avatar>
-          <div className="flex-1">
-            <Label className="mb-2 block text-sm">이미지 URL</Label>
-            <div className="relative">
-              <ImagePlus
-                size={16}
-                className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground"
-              />
+          <div className="flex-1 space-y-2">
+            <Label className="block text-sm">프로필 사진 업로드</Label>
+            <div className="flex items-center gap-2">
+              <Button 
+                type="button" 
+                variant="outline" 
+                size="sm"
+                onClick={() => fileInputRef.current?.click()}
+              >
+                <ImagePlus size={16} className="mr-2" />
+                파일 선택
+              </Button>
               <Input
-                value={form.profileImage}
-                onChange={(e) => updateField("profileImage", e.target.value)}
-                placeholder="https://example.com/photo.jpg"
-                className="pl-10"
-                maxLength={500}
-                aria-invalid={!!errors.profileImage}
+                type="file"
+                ref={fileInputRef}
+                onChange={handleFileChange}
+                accept="image/*"
+                className="hidden"
               />
+              {form.imageFile && (
+                <span className="text-xs text-muted-foreground truncate max-w-[200px]">
+                  {form.imageFile.name}
+                </span>
+              )}
             </div>
-            {errors.profileImage ? (
-              <p className="mt-1 text-xs text-destructive">{errors.profileImage}</p>
-            ) : (
-              <p className="mt-1 text-xs text-muted-foreground">
-                프로필 사진 URL을 입력하세요.
-              </p>
-            )}
+            <p className="text-xs text-muted-foreground">
+              새로운 프로필 사진을 업로드하세요. (JPG, PNG 등)
+            </p>
           </div>
         </CardContent>
       </Card>
@@ -330,7 +366,11 @@ function ProfileForm({ profile, userName }: { profile: ProfileResponse; userName
 export default function ProfilePage() {
   const { user } = useAuth();
   const router = useRouter();
-  const { data: profile, isLoading, error: profileError } = useProfile();
+  const { data: profile, isLoading, error: profileError } = profileApi.useGetProfile({
+    query: {
+      select: (res) => res.data,
+    }
+  });
 
   if (!user) {
     router.push("/login");
@@ -365,7 +405,7 @@ export default function ProfilePage() {
         </p>
       </div>
 
-      <ProfileForm key={profile.email} profile={profile} userName={user.name} />
+      <ProfileForm key={profile.email} profile={profile} userName={user.name || ""} />
     </div>
   );
 }

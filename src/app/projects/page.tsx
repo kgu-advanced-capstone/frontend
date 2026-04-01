@@ -15,7 +15,7 @@ import {
 } from "@/components/ui/dialog";
 import ProjectCard from "@/components/ProjectCard";
 import { categories } from "@/data/dummy";
-import { useProjects, useApplyProject, useMyProjects } from "@/api/hooks/useProjects";
+import * as projectApi from "@/api/generated/project/project";
 
 export default function ProjectsPage() {
   const [category, setCategory] = useState("전체");
@@ -24,17 +24,29 @@ export default function ProjectsPage() {
   const [confirmProject, setConfirmProject] = useState<{ id: number; title: string } | null>(null);
   const [joinedProject, setJoinedProject] = useState<string | null>(null);
 
-  const { data, isLoading } = useProjects({
+  const { data, isLoading } = projectApi.useGetProjects({
     category: category === "전체" ? undefined : category,
     search: search || undefined,
     page,
     limit: 12,
+  }, {
+    query: {
+      select: (res) => res.data,
+    }
   });
 
-  const { data: myProjects } = useMyProjects();
-  const applyMutation = useApplyProject();
+  const { data: myProjects } = projectApi.useGetMyProjects({
+    query: {
+      select: (res) => res.data,
+    }
+  });
+  const applyMutation = projectApi.useApplyProject();
 
-  const joinedIds = new Set(myProjects?.map((mp) => mp.project.id) ?? []);
+  const joinedIds = new Set(
+    myProjects
+      ?.map((mp) => mp.project?.id)
+      .filter((id): id is number => typeof id === "number") ?? []
+  );
 
   const projects = data?.projects ?? [];
   const totalCount = data?.totalCount ?? 0;
@@ -42,14 +54,14 @@ export default function ProjectsPage() {
 
   const handleJoinClick = (id: number) => {
     const project = projects.find((p) => p.id === id);
-    if (project) {
+    if (project && project.id && project.title) {
       setConfirmProject({ id: project.id, title: project.title });
     }
   };
 
   const handleConfirmJoin = () => {
     if (!confirmProject) return;
-    applyMutation.mutate(confirmProject.id, {
+    applyMutation.mutate({ id: confirmProject.id }, {
       onSuccess: () => {
         setJoinedProject(confirmProject.title);
         setConfirmProject(null);
@@ -120,7 +132,7 @@ export default function ProjectsPage() {
       ) : (
         <>
           <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-            {projects.map((project) => (
+            {projects.map((project) => project.id && (
               <ProjectCard
                 key={project.id}
                 project={project}
