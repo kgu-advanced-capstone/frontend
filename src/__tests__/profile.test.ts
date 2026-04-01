@@ -81,22 +81,23 @@ describe("프로필 전체 수정", () => {
     const { result } = renderHookWithClient(() => profileApi.useUpdateProfile());
     result.current.mutate({
       data: {
-        name: "김빌디",
-        phone: "010-9999-8888",
-        github: "https://github.com/kimbuildi",
-        blog: "https://kimbuildi.dev",
-        profileImage: "https://example.com/avatar.jpg",
+        request: {
+          name: "김빌디",
+          phone: "010-9999-8888",
+          github: "https://github.com/kimbuildi",
+          blog: "https://kimbuildi.dev",
+        },
+        profileImage: new Blob(["fake image data"], { type: "image/jpeg" }),
       }
     });
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
-    expect(result.current.data?.data).toMatchObject({
+    expect((result.current.data as any).data).toMatchObject({
       name: "김빌디",
       email: "dev@buildi.com",
       phone: "010-9999-8888",
       github: "https://github.com/kimbuildi",
       blog: "https://kimbuildi.dev",
-      profileImage: "https://example.com/avatar.jpg",
     });
   });
 });
@@ -118,16 +119,16 @@ describe("프로필 부분 수정", () => {
 
     // 먼저 전화번호 설정
     const { result: update1 } = renderHookWithClient(() => profileApi.useUpdateProfile());
-    update1.current.mutate({ data: { phone: "010-1111-2222" } });
+    update1.current.mutate({ data: { request: { phone: "010-1111-2222" } } });
     await waitFor(() => expect(update1.current.isSuccess).toBe(true));
 
     // GitHub만 수정
     const { result: update2 } = renderHookWithClient(() => profileApi.useUpdateProfile());
-    update2.current.mutate({ data: { github: "https://github.com/kimdev" } });
+    update2.current.mutate({ data: { request: { github: "https://github.com/kimdev" } } });
     await waitFor(() => expect(update2.current.isSuccess).toBe(true));
 
     // 전화번호가 유지되는지 확인
-    expect(update2.current.data?.data).toMatchObject({
+    expect((update2.current.data as any).data).toMatchObject({
       name: "김개발",
       phone: "010-1111-2222",
       github: "https://github.com/kimdev",
@@ -146,11 +147,11 @@ describe("프로필 부분 수정", () => {
     await waitFor(() => expect(reg.current.isSuccess).toBe(true));
 
     const { result } = renderHookWithClient(() => profileApi.useUpdateProfile());
-    result.current.mutate({ data: { name: "박개발" } });
+    result.current.mutate({ data: { request: { name: "박개발" } } });
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
 
-    expect(result.current.data?.data?.name).toBe("박개발");
-    expect(result.current.data?.data?.email).toBe("dev@buildi.com");
+    expect((result.current.data as any).data?.name).toBe("박개발");
+    expect((result.current.data as any).data?.email).toBe("dev@buildi.com");
   });
 
   it("블로그 URL만 수정할 수 있다", async () => {
@@ -165,11 +166,11 @@ describe("프로필 부분 수정", () => {
     await waitFor(() => expect(reg.current.isSuccess).toBe(true));
 
     const { result } = renderHookWithClient(() => profileApi.useUpdateProfile());
-    result.current.mutate({ data: { blog: "https://blog.buildi.com" } });
+    result.current.mutate({ data: { request: { blog: "https://blog.buildi.com" } } });
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
 
-    expect(result.current.data?.data?.blog).toBe("https://blog.buildi.com");
-    expect(result.current.data?.data?.name).toBe("김개발");
+    expect((result.current.data as any).data?.blog).toBe("https://blog.buildi.com");
+    expect((result.current.data as any).data?.name).toBe("김개발");
   });
 
   it("프로필 이미지만 수정할 수 있다", async () => {
@@ -184,10 +185,15 @@ describe("프로필 부분 수정", () => {
     await waitFor(() => expect(reg.current.isSuccess).toBe(true));
 
     const { result } = renderHookWithClient(() => profileApi.useUpdateProfile());
-    result.current.mutate({ data: { profileImage: "https://example.com/new-avatar.png" } });
+    result.current.mutate({
+      data: {
+        request: {},
+        profileImage: new Blob(["fake image data"], { type: "image/jpeg" })
+      }
+    });
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
 
-    expect(result.current.data?.data?.profileImage).toBe("https://example.com/new-avatar.png");
+    expect((result.current.data as any).data?.profileImage).toBeDefined();
   });
 });
 
@@ -210,9 +216,11 @@ describe("수정 후 재조회", () => {
     const { result: update } = renderHookWithClient(() => profileApi.useUpdateProfile());
     update.current.mutate({
       data: {
-        name: "이개발",
-        github: "https://github.com/leedev",
-        phone: "010-5555-6666",
+        request: {
+          name: "이개발",
+          github: "https://github.com/leedev",
+          phone: "010-5555-6666",
+        }
       }
     });
     await waitFor(() => expect(update.current.isSuccess).toBe(true));
@@ -221,7 +229,7 @@ describe("수정 후 재조회", () => {
     const { result: profile } = renderHookWithClient(() => profileApi.useGetProfile());
     await waitFor(() => expect(profile.current.isSuccess).toBe(true));
 
-    expect(profile.current.data?.data).toMatchObject({
+    expect((profile.current.data as any).data).toMatchObject({
       name: "이개발",
       email: "dev@buildi.com",
       github: "https://github.com/leedev",
@@ -242,23 +250,23 @@ describe("수정 후 재조회", () => {
 
     // 첫 번째 수정
     const { result: u1 } = renderHookWithClient(() => profileApi.useUpdateProfile());
-    u1.current.mutate({ data: { name: "첫번째" } });
+    u1.current.mutate({ data: { request: { name: "첫번째" } } });
     await waitFor(() => expect(u1.current.isSuccess).toBe(true));
 
     // 두 번째 수정
     const { result: u2 } = renderHookWithClient(() => profileApi.useUpdateProfile());
-    u2.current.mutate({ data: { name: "두번째" } });
+    u2.current.mutate({ data: { request: { name: "두번째" } } });
     await waitFor(() => expect(u2.current.isSuccess).toBe(true));
 
     // 세 번째 수정
     const { result: u3 } = renderHookWithClient(() => profileApi.useUpdateProfile());
-    u3.current.mutate({ data: { name: "최종이름" } });
+    u3.current.mutate({ data: { request: { name: "최종이름" } } });
     await waitFor(() => expect(u3.current.isSuccess).toBe(true));
 
     // 재조회
     const { result: profile } = renderHookWithClient(() => profileApi.useGetProfile());
     await waitFor(() => expect(profile.current.isSuccess).toBe(true));
-    expect(profile.current.data?.data?.name).toBe("최종이름");
+    expect((profile.current.data as any).data?.name).toBe("최종이름");
   });
 });
 
@@ -280,11 +288,11 @@ describe("이메일 변경 불가", () => {
     // UpdateProfileRequest에는 email 필드가 없으므로
     // name만 수정해도 email은 유지
     const { result } = renderHookWithClient(() => profileApi.useUpdateProfile());
-    result.current.mutate({ data: { name: "변경됨" } });
+    result.current.mutate({ data: { request: { name: "변경됨" } } });
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
 
-    expect(result.current.data?.data?.email).toBe("original@buildi.com");
-    expect(result.current.data?.data?.name).toBe("변경됨");
+    expect((result.current.data as any).data?.email).toBe("original@buildi.com");
+    expect((result.current.data as any).data?.name).toBe("변경됨");
   });
 });
 
@@ -342,11 +350,13 @@ describe("복합 시나리오", () => {
     const { result: update } = renderHookWithClient(() => profileApi.useUpdateProfile());
     update.current.mutate({
       data: {
-        name: "수정된이름",
-        phone: "010-1234-5678",
-        github: "https://github.com/flowtest",
-        blog: "https://flowtest.blog",
-        profileImage: "https://example.com/flow.jpg",
+        request: {
+          name: "수정된이름",
+          phone: "010-1234-5678",
+          github: "https://github.com/flowtest",
+          blog: "https://flowtest.blog",
+        },
+        profileImage: new Blob(["fake image data"], { type: "image/jpeg" }),
       }
     });
     await waitFor(() => expect(update.current.isSuccess).toBe(true));
@@ -354,13 +364,12 @@ describe("복합 시나리오", () => {
     // 4. 재조회 확인
     const { result: p2 } = renderHookWithClient(() => profileApi.useGetProfile());
     await waitFor(() => expect(p2.current.isSuccess).toBe(true));
-    expect(p2.current.data?.data).toMatchObject({
+    expect((p2.current.data as any).data).toMatchObject({
       name: "수정된이름",
       email: "flow@buildi.com",
       phone: "010-1234-5678",
       github: "https://github.com/flowtest",
       blog: "https://flowtest.blog",
-      profileImage: "https://example.com/flow.jpg",
     });
   });
 });

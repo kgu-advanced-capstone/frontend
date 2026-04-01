@@ -36,6 +36,8 @@ import type {
 import { customInstance } from '../../mutator/custom-instance';
 
 
+type SecondParameter<T extends (...args: never) => unknown> = Parameters<T>[1];
+
 
 
 /**
@@ -84,15 +86,15 @@ export const markAsRead = async (id: number, options?: RequestInit): Promise<mar
 
 
 export const getMarkAsReadMutationOptions = <TError = void,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof markAsRead>>, TError,{id: number}, TContext>, }
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof markAsRead>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customInstance>}
 ): UseMutationOptions<Awaited<ReturnType<typeof markAsRead>>, TError,{id: number}, TContext> => {
 
 const mutationKey = ['markAsRead'];
-const {mutation: mutationOptions} = options ?
+const {mutation: mutationOptions, request: requestOptions} = options ?
       options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
       options
       : {...options, mutation: {...options.mutation, mutationKey}}
-      : {mutation: { mutationKey, }};
+      : {mutation: { mutationKey, }, request: undefined};
 
 
 
@@ -100,7 +102,7 @@ const {mutation: mutationOptions} = options ?
       const mutationFn: MutationFunction<Awaited<ReturnType<typeof markAsRead>>, {id: number}> = (props) => {
           const {id} = props ?? {};
 
-          return  markAsRead(id,)
+          return  markAsRead(id,requestOptions)
         }
 
 
@@ -118,7 +120,7 @@ const {mutation: mutationOptions} = options ?
  * @summary 단일 알림 읽음 처리
  */
 export const useMarkAsRead = <TError = void,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof markAsRead>>, TError,{id: number}, TContext>, }
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof markAsRead>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customInstance>}
  , queryClient?: QueryClient): UseMutationResult<
         Awaited<ReturnType<typeof markAsRead>>,
         TError,
@@ -166,15 +168,15 @@ export const markAllAsRead = async ( options?: RequestInit): Promise<markAllAsRe
 
 
 export const getMarkAllAsReadMutationOptions = <TError = unknown,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof markAllAsRead>>, TError,void, TContext>, }
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof markAllAsRead>>, TError,void, TContext>, request?: SecondParameter<typeof customInstance>}
 ): UseMutationOptions<Awaited<ReturnType<typeof markAllAsRead>>, TError,void, TContext> => {
 
 const mutationKey = ['markAllAsRead'];
-const {mutation: mutationOptions} = options ?
+const {mutation: mutationOptions, request: requestOptions} = options ?
       options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
       options
       : {...options, mutation: {...options.mutation, mutationKey}}
-      : {mutation: { mutationKey, }};
+      : {mutation: { mutationKey, }, request: undefined};
 
 
 
@@ -182,7 +184,7 @@ const {mutation: mutationOptions} = options ?
       const mutationFn: MutationFunction<Awaited<ReturnType<typeof markAllAsRead>>, void> = () => {
 
 
-          return  markAllAsRead()
+          return  markAllAsRead(requestOptions)
         }
 
 
@@ -200,7 +202,7 @@ const {mutation: mutationOptions} = options ?
  * @summary 모든 알림 읽음 처리
  */
 export const useMarkAllAsRead = <TError = unknown,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof markAllAsRead>>, TError,void, TContext>, }
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof markAllAsRead>>, TError,void, TContext>, request?: SecondParameter<typeof customInstance>}
  , queryClient?: QueryClient): UseMutationResult<
         Awaited<ReturnType<typeof markAllAsRead>>,
         TError,
@@ -268,16 +270,16 @@ export const getGetNotificationsQueryKey = () => {
     }
 
 
-export const getGetNotificationsInfiniteQueryOptions = <TData = InfiniteData<Awaited<ReturnType<typeof getNotifications>>>, TError = void>( options?: { query?:Partial<UseInfiniteQueryOptions<Awaited<ReturnType<typeof getNotifications>>, TError, TData>>, }
+export const getGetNotificationsInfiniteQueryOptions = <TData = InfiniteData<Awaited<ReturnType<typeof getNotifications>>>, TError = void>( options?: { query?:Partial<UseInfiniteQueryOptions<Awaited<ReturnType<typeof getNotifications>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
 ) => {
 
-const {query: queryOptions} = options ?? {};
+const {query: queryOptions, request: requestOptions} = options ?? {};
 
   const queryKey =  queryOptions?.queryKey ?? getGetNotificationsInfiniteQueryKey();
 
 
 
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof getNotifications>>> = ({ signal }) => getNotifications({ signal });
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getNotifications>>> = ({ signal }) => getNotifications({ signal, ...requestOptions });
 
 
 
@@ -297,7 +299,7 @@ export function useGetNotificationsInfinite<TData = InfiniteData<Awaited<ReturnT
           TError,
           Awaited<ReturnType<typeof getNotifications>>
         > , 'initialData'
-      >, }
+      >, request?: SecondParameter<typeof customInstance>}
  , queryClient?: QueryClient
   ):  DefinedUseInfiniteQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 export function useGetNotificationsInfinite<TData = InfiniteData<Awaited<ReturnType<typeof getNotifications>>>, TError = void>(
@@ -307,11 +309,11 @@ export function useGetNotificationsInfinite<TData = InfiniteData<Awaited<ReturnT
           TError,
           Awaited<ReturnType<typeof getNotifications>>
         > , 'initialData'
-      >, }
+      >, request?: SecondParameter<typeof customInstance>}
  , queryClient?: QueryClient
   ):  UseInfiniteQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 export function useGetNotificationsInfinite<TData = InfiniteData<Awaited<ReturnType<typeof getNotifications>>>, TError = void>(
-  options?: { query?:Partial<UseInfiniteQueryOptions<Awaited<ReturnType<typeof getNotifications>>, TError, TData>>, }
+  options?: { query?:Partial<UseInfiniteQueryOptions<Awaited<ReturnType<typeof getNotifications>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
  , queryClient?: QueryClient
   ):  UseInfiniteQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
@@ -319,7 +321,7 @@ export function useGetNotificationsInfinite<TData = InfiniteData<Awaited<ReturnT
  */
 
 export function useGetNotificationsInfinite<TData = InfiniteData<Awaited<ReturnType<typeof getNotifications>>>, TError = void>(
-  options?: { query?:Partial<UseInfiniteQueryOptions<Awaited<ReturnType<typeof getNotifications>>, TError, TData>>, }
+  options?: { query?:Partial<UseInfiniteQueryOptions<Awaited<ReturnType<typeof getNotifications>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
  , queryClient?: QueryClient
  ):  UseInfiniteQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
@@ -333,16 +335,16 @@ export function useGetNotificationsInfinite<TData = InfiniteData<Awaited<ReturnT
 
 
 
-export const getGetNotificationsQueryOptions = <TData = Awaited<ReturnType<typeof getNotifications>>, TError = void>( options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getNotifications>>, TError, TData>>, }
+export const getGetNotificationsQueryOptions = <TData = Awaited<ReturnType<typeof getNotifications>>, TError = void>( options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getNotifications>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
 ) => {
 
-const {query: queryOptions} = options ?? {};
+const {query: queryOptions, request: requestOptions} = options ?? {};
 
   const queryKey =  queryOptions?.queryKey ?? getGetNotificationsQueryKey();
 
 
 
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof getNotifications>>> = ({ signal }) => getNotifications({ signal });
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getNotifications>>> = ({ signal }) => getNotifications({ signal, ...requestOptions });
 
 
 
@@ -362,7 +364,7 @@ export function useGetNotifications<TData = Awaited<ReturnType<typeof getNotific
           TError,
           Awaited<ReturnType<typeof getNotifications>>
         > , 'initialData'
-      >, }
+      >, request?: SecondParameter<typeof customInstance>}
  , queryClient?: QueryClient
   ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 export function useGetNotifications<TData = Awaited<ReturnType<typeof getNotifications>>, TError = void>(
@@ -372,11 +374,11 @@ export function useGetNotifications<TData = Awaited<ReturnType<typeof getNotific
           TError,
           Awaited<ReturnType<typeof getNotifications>>
         > , 'initialData'
-      >, }
+      >, request?: SecondParameter<typeof customInstance>}
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 export function useGetNotifications<TData = Awaited<ReturnType<typeof getNotifications>>, TError = void>(
-  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getNotifications>>, TError, TData>>, }
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getNotifications>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
@@ -384,7 +386,7 @@ export function useGetNotifications<TData = Awaited<ReturnType<typeof getNotific
  */
 
 export function useGetNotifications<TData = Awaited<ReturnType<typeof getNotifications>>, TError = void>(
-  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getNotifications>>, TError, TData>>, }
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getNotifications>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
  , queryClient?: QueryClient
  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 

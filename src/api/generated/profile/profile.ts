@@ -31,11 +31,13 @@ import type {
 
 import type {
   ProfileResponse,
-  UpdateProfileRequest
+  UpdateProfileBody
 } from '../model';
 
 import { customInstance } from '../../mutator/custom-instance';
 
+
+type SecondParameter<T extends (...args: never) => unknown> = Parameters<T>[1];
 
 
 
@@ -98,16 +100,16 @@ export const getGetProfileQueryKey = () => {
     }
 
 
-export const getGetProfileInfiniteQueryOptions = <TData = InfiniteData<Awaited<ReturnType<typeof getProfile>>>, TError = void>( options?: { query?:Partial<UseInfiniteQueryOptions<Awaited<ReturnType<typeof getProfile>>, TError, TData>>, }
+export const getGetProfileInfiniteQueryOptions = <TData = InfiniteData<Awaited<ReturnType<typeof getProfile>>>, TError = void>( options?: { query?:Partial<UseInfiniteQueryOptions<Awaited<ReturnType<typeof getProfile>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
 ) => {
 
-const {query: queryOptions} = options ?? {};
+const {query: queryOptions, request: requestOptions} = options ?? {};
 
   const queryKey =  queryOptions?.queryKey ?? getGetProfileInfiniteQueryKey();
 
 
 
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof getProfile>>> = ({ signal }) => getProfile({ signal });
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getProfile>>> = ({ signal }) => getProfile({ signal, ...requestOptions });
 
 
 
@@ -127,7 +129,7 @@ export function useGetProfileInfinite<TData = InfiniteData<Awaited<ReturnType<ty
           TError,
           Awaited<ReturnType<typeof getProfile>>
         > , 'initialData'
-      >, }
+      >, request?: SecondParameter<typeof customInstance>}
  , queryClient?: QueryClient
   ):  DefinedUseInfiniteQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 export function useGetProfileInfinite<TData = InfiniteData<Awaited<ReturnType<typeof getProfile>>>, TError = void>(
@@ -137,11 +139,11 @@ export function useGetProfileInfinite<TData = InfiniteData<Awaited<ReturnType<ty
           TError,
           Awaited<ReturnType<typeof getProfile>>
         > , 'initialData'
-      >, }
+      >, request?: SecondParameter<typeof customInstance>}
  , queryClient?: QueryClient
   ):  UseInfiniteQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 export function useGetProfileInfinite<TData = InfiniteData<Awaited<ReturnType<typeof getProfile>>>, TError = void>(
-  options?: { query?:Partial<UseInfiniteQueryOptions<Awaited<ReturnType<typeof getProfile>>, TError, TData>>, }
+  options?: { query?:Partial<UseInfiniteQueryOptions<Awaited<ReturnType<typeof getProfile>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
  , queryClient?: QueryClient
   ):  UseInfiniteQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
@@ -149,7 +151,7 @@ export function useGetProfileInfinite<TData = InfiniteData<Awaited<ReturnType<ty
  */
 
 export function useGetProfileInfinite<TData = InfiniteData<Awaited<ReturnType<typeof getProfile>>>, TError = void>(
-  options?: { query?:Partial<UseInfiniteQueryOptions<Awaited<ReturnType<typeof getProfile>>, TError, TData>>, }
+  options?: { query?:Partial<UseInfiniteQueryOptions<Awaited<ReturnType<typeof getProfile>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
  , queryClient?: QueryClient
  ):  UseInfiniteQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
@@ -163,16 +165,16 @@ export function useGetProfileInfinite<TData = InfiniteData<Awaited<ReturnType<ty
 
 
 
-export const getGetProfileQueryOptions = <TData = Awaited<ReturnType<typeof getProfile>>, TError = void>( options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getProfile>>, TError, TData>>, }
+export const getGetProfileQueryOptions = <TData = Awaited<ReturnType<typeof getProfile>>, TError = void>( options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getProfile>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
 ) => {
 
-const {query: queryOptions} = options ?? {};
+const {query: queryOptions, request: requestOptions} = options ?? {};
 
   const queryKey =  queryOptions?.queryKey ?? getGetProfileQueryKey();
 
 
 
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof getProfile>>> = ({ signal }) => getProfile({ signal });
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getProfile>>> = ({ signal }) => getProfile({ signal, ...requestOptions });
 
 
 
@@ -192,7 +194,7 @@ export function useGetProfile<TData = Awaited<ReturnType<typeof getProfile>>, TE
           TError,
           Awaited<ReturnType<typeof getProfile>>
         > , 'initialData'
-      >, }
+      >, request?: SecondParameter<typeof customInstance>}
  , queryClient?: QueryClient
   ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 export function useGetProfile<TData = Awaited<ReturnType<typeof getProfile>>, TError = void>(
@@ -202,11 +204,11 @@ export function useGetProfile<TData = Awaited<ReturnType<typeof getProfile>>, TE
           TError,
           Awaited<ReturnType<typeof getProfile>>
         > , 'initialData'
-      >, }
+      >, request?: SecondParameter<typeof customInstance>}
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 export function useGetProfile<TData = Awaited<ReturnType<typeof getProfile>>, TError = void>(
-  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getProfile>>, TError, TData>>, }
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getProfile>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
@@ -214,7 +216,7 @@ export function useGetProfile<TData = Awaited<ReturnType<typeof getProfile>>, TE
  */
 
 export function useGetProfile<TData = Awaited<ReturnType<typeof getProfile>>, TError = void>(
-  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getProfile>>, TError, TData>>, }
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getProfile>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
  , queryClient?: QueryClient
  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
@@ -264,15 +266,20 @@ export const getUpdateProfileUrl = () => {
   return `/api/profile`
 }
 
-export const updateProfile = async (updateProfileRequest: UpdateProfileRequest, options?: RequestInit): Promise<updateProfileResponse> => {
+export const updateProfile = async (updateProfileBody: UpdateProfileBody, options?: RequestInit): Promise<updateProfileResponse> => {
+    const formData = new FormData();
+formData.append(`request`, JSON.stringify(updateProfileBody.request));
+if(updateProfileBody.profileImage !== undefined) {
+ formData.append(`profileImage`, updateProfileBody.profileImage);
+ }
 
   return customInstance<updateProfileResponse>(getUpdateProfileUrl(),
   {
     ...options,
-    method: 'PATCH',
-    headers: { 'Content-Type': 'application/json', ...options?.headers },
-    body: JSON.stringify(
-      updateProfileRequest,)
+    method: 'PATCH'
+    ,
+    body:
+      formData,
   }
 );}
 
@@ -280,23 +287,23 @@ export const updateProfile = async (updateProfileRequest: UpdateProfileRequest, 
 
 
 export const getUpdateProfileMutationOptions = <TError = void,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateProfile>>, TError,{data: UpdateProfileRequest}, TContext>, }
-): UseMutationOptions<Awaited<ReturnType<typeof updateProfile>>, TError,{data: UpdateProfileRequest}, TContext> => {
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateProfile>>, TError,{data: UpdateProfileBody}, TContext>, request?: SecondParameter<typeof customInstance>}
+): UseMutationOptions<Awaited<ReturnType<typeof updateProfile>>, TError,{data: UpdateProfileBody}, TContext> => {
 
 const mutationKey = ['updateProfile'];
-const {mutation: mutationOptions} = options ?
+const {mutation: mutationOptions, request: requestOptions} = options ?
       options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
       options
       : {...options, mutation: {...options.mutation, mutationKey}}
-      : {mutation: { mutationKey, }};
+      : {mutation: { mutationKey, }, request: undefined};
 
 
 
 
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof updateProfile>>, {data: UpdateProfileRequest}> = (props) => {
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof updateProfile>>, {data: UpdateProfileBody}> = (props) => {
           const {data} = props ?? {};
 
-          return  updateProfile(data,)
+          return  updateProfile(data,requestOptions)
         }
 
 
@@ -307,18 +314,18 @@ const {mutation: mutationOptions} = options ?
   return  { mutationFn, ...mutationOptions }}
 
     export type UpdateProfileMutationResult = NonNullable<Awaited<ReturnType<typeof updateProfile>>>
-    export type UpdateProfileMutationBody = UpdateProfileRequest
+    export type UpdateProfileMutationBody = UpdateProfileBody
     export type UpdateProfileMutationError = void
 
     /**
  * @summary 프로필 수정
  */
 export const useUpdateProfile = <TError = void,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateProfile>>, TError,{data: UpdateProfileRequest}, TContext>, }
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateProfile>>, TError,{data: UpdateProfileBody}, TContext>, request?: SecondParameter<typeof customInstance>}
  , queryClient?: QueryClient): UseMutationResult<
         Awaited<ReturnType<typeof updateProfile>>,
         TError,
-        {data: UpdateProfileRequest},
+        {data: UpdateProfileBody},
         TContext
       > => {
       return useMutation(getUpdateProfileMutationOptions(options), queryClient);

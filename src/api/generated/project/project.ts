@@ -41,6 +41,8 @@ import type {
 import { customInstance } from '../../mutator/custom-instance';
 
 
+type SecondParameter<T extends (...args: never) => unknown> = Parameters<T>[1];
+
 
 
 /**
@@ -102,16 +104,16 @@ export const getGetProjectsQueryKey = (params?: GetProjectsParams,) => {
     }
 
 
-export const getGetProjectsInfiniteQueryOptions = <TData = InfiniteData<Awaited<ReturnType<typeof getProjects>>, GetProjectsParams['page']>, TError = unknown>(params?: GetProjectsParams, options?: { query?:Partial<UseInfiniteQueryOptions<Awaited<ReturnType<typeof getProjects>>, TError, TData, QueryKey, GetProjectsParams['page']>>, }
+export const getGetProjectsInfiniteQueryOptions = <TData = InfiniteData<Awaited<ReturnType<typeof getProjects>>, GetProjectsParams['page']>, TError = unknown>(params?: GetProjectsParams, options?: { query?:Partial<UseInfiniteQueryOptions<Awaited<ReturnType<typeof getProjects>>, TError, TData, QueryKey, GetProjectsParams['page']>>, request?: SecondParameter<typeof customInstance>}
 ) => {
 
-const {query: queryOptions} = options ?? {};
+const {query: queryOptions, request: requestOptions} = options ?? {};
 
   const queryKey =  queryOptions?.queryKey ?? getGetProjectsInfiniteQueryKey(params);
 
 
 
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof getProjects>>, QueryKey, GetProjectsParams['page']> = ({ signal, pageParam }) => getProjects({...params, 'page': pageParam || params?.['page']}, { signal });
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getProjects>>, QueryKey, GetProjectsParams['page']> = ({ signal, pageParam }) => getProjects({...params, 'page': pageParam || params?.['page']}, { signal, ...requestOptions });
 
 
 
@@ -131,7 +133,7 @@ export function useGetProjectsInfinite<TData = InfiniteData<Awaited<ReturnType<t
           TError,
           Awaited<ReturnType<typeof getProjects>>, QueryKey
         > , 'initialData'
-      >, }
+      >, request?: SecondParameter<typeof customInstance>}
  , queryClient?: QueryClient
   ):  DefinedUseInfiniteQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 export function useGetProjectsInfinite<TData = InfiniteData<Awaited<ReturnType<typeof getProjects>>, GetProjectsParams['page']>, TError = unknown>(
@@ -141,11 +143,11 @@ export function useGetProjectsInfinite<TData = InfiniteData<Awaited<ReturnType<t
           TError,
           Awaited<ReturnType<typeof getProjects>>, QueryKey
         > , 'initialData'
-      >, }
+      >, request?: SecondParameter<typeof customInstance>}
  , queryClient?: QueryClient
   ):  UseInfiniteQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 export function useGetProjectsInfinite<TData = InfiniteData<Awaited<ReturnType<typeof getProjects>>, GetProjectsParams['page']>, TError = unknown>(
- params?: GetProjectsParams, options?: { query?:Partial<UseInfiniteQueryOptions<Awaited<ReturnType<typeof getProjects>>, TError, TData, QueryKey, GetProjectsParams['page']>>, }
+ params?: GetProjectsParams, options?: { query?:Partial<UseInfiniteQueryOptions<Awaited<ReturnType<typeof getProjects>>, TError, TData, QueryKey, GetProjectsParams['page']>>, request?: SecondParameter<typeof customInstance>}
  , queryClient?: QueryClient
   ):  UseInfiniteQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
@@ -153,7 +155,7 @@ export function useGetProjectsInfinite<TData = InfiniteData<Awaited<ReturnType<t
  */
 
 export function useGetProjectsInfinite<TData = InfiniteData<Awaited<ReturnType<typeof getProjects>>, GetProjectsParams['page']>, TError = unknown>(
- params?: GetProjectsParams, options?: { query?:Partial<UseInfiniteQueryOptions<Awaited<ReturnType<typeof getProjects>>, TError, TData, QueryKey, GetProjectsParams['page']>>, }
+ params?: GetProjectsParams, options?: { query?:Partial<UseInfiniteQueryOptions<Awaited<ReturnType<typeof getProjects>>, TError, TData, QueryKey, GetProjectsParams['page']>>, request?: SecondParameter<typeof customInstance>}
  , queryClient?: QueryClient
  ):  UseInfiniteQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
@@ -167,16 +169,16 @@ export function useGetProjectsInfinite<TData = InfiniteData<Awaited<ReturnType<t
 
 
 
-export const getGetProjectsQueryOptions = <TData = Awaited<ReturnType<typeof getProjects>>, TError = unknown>(params?: GetProjectsParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getProjects>>, TError, TData>>, }
+export const getGetProjectsQueryOptions = <TData = Awaited<ReturnType<typeof getProjects>>, TError = unknown>(params?: GetProjectsParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getProjects>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
 ) => {
 
-const {query: queryOptions} = options ?? {};
+const {query: queryOptions, request: requestOptions} = options ?? {};
 
   const queryKey =  queryOptions?.queryKey ?? getGetProjectsQueryKey(params);
 
 
 
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof getProjects>>> = ({ signal }) => getProjects(params, { signal });
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getProjects>>> = ({ signal }) => getProjects(params, { signal, ...requestOptions });
 
 
 
@@ -196,7 +198,7 @@ export function useGetProjects<TData = Awaited<ReturnType<typeof getProjects>>, 
           TError,
           Awaited<ReturnType<typeof getProjects>>
         > , 'initialData'
-      >, }
+      >, request?: SecondParameter<typeof customInstance>}
  , queryClient?: QueryClient
   ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 export function useGetProjects<TData = Awaited<ReturnType<typeof getProjects>>, TError = unknown>(
@@ -206,11 +208,11 @@ export function useGetProjects<TData = Awaited<ReturnType<typeof getProjects>>, 
           TError,
           Awaited<ReturnType<typeof getProjects>>
         > , 'initialData'
-      >, }
+      >, request?: SecondParameter<typeof customInstance>}
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 export function useGetProjects<TData = Awaited<ReturnType<typeof getProjects>>, TError = unknown>(
- params?: GetProjectsParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getProjects>>, TError, TData>>, }
+ params?: GetProjectsParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getProjects>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
@@ -218,7 +220,7 @@ export function useGetProjects<TData = Awaited<ReturnType<typeof getProjects>>, 
  */
 
 export function useGetProjects<TData = Awaited<ReturnType<typeof getProjects>>, TError = unknown>(
- params?: GetProjectsParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getProjects>>, TError, TData>>, }
+ params?: GetProjectsParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getProjects>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
  , queryClient?: QueryClient
  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
@@ -284,15 +286,15 @@ export const createProject = async (createProjectRequest: CreateProjectRequest, 
 
 
 export const getCreateProjectMutationOptions = <TError = void,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createProject>>, TError,{data: CreateProjectRequest}, TContext>, }
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createProject>>, TError,{data: CreateProjectRequest}, TContext>, request?: SecondParameter<typeof customInstance>}
 ): UseMutationOptions<Awaited<ReturnType<typeof createProject>>, TError,{data: CreateProjectRequest}, TContext> => {
 
 const mutationKey = ['createProject'];
-const {mutation: mutationOptions} = options ?
+const {mutation: mutationOptions, request: requestOptions} = options ?
       options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
       options
       : {...options, mutation: {...options.mutation, mutationKey}}
-      : {mutation: { mutationKey, }};
+      : {mutation: { mutationKey, }, request: undefined};
 
 
 
@@ -300,7 +302,7 @@ const {mutation: mutationOptions} = options ?
       const mutationFn: MutationFunction<Awaited<ReturnType<typeof createProject>>, {data: CreateProjectRequest}> = (props) => {
           const {data} = props ?? {};
 
-          return  createProject(data,)
+          return  createProject(data,requestOptions)
         }
 
 
@@ -318,7 +320,7 @@ const {mutation: mutationOptions} = options ?
  * @summary 프로젝트 생성
  */
 export const useCreateProject = <TError = void,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createProject>>, TError,{data: CreateProjectRequest}, TContext>, }
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createProject>>, TError,{data: CreateProjectRequest}, TContext>, request?: SecondParameter<typeof customInstance>}
  , queryClient?: QueryClient): UseMutationResult<
         Awaited<ReturnType<typeof createProject>>,
         TError,
@@ -378,15 +380,15 @@ export const applyProject = async (id: number, options?: RequestInit): Promise<a
 
 
 export const getApplyProjectMutationOptions = <TError = void,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof applyProject>>, TError,{id: number}, TContext>, }
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof applyProject>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customInstance>}
 ): UseMutationOptions<Awaited<ReturnType<typeof applyProject>>, TError,{id: number}, TContext> => {
 
 const mutationKey = ['applyProject'];
-const {mutation: mutationOptions} = options ?
+const {mutation: mutationOptions, request: requestOptions} = options ?
       options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
       options
       : {...options, mutation: {...options.mutation, mutationKey}}
-      : {mutation: { mutationKey, }};
+      : {mutation: { mutationKey, }, request: undefined};
 
 
 
@@ -394,7 +396,7 @@ const {mutation: mutationOptions} = options ?
       const mutationFn: MutationFunction<Awaited<ReturnType<typeof applyProject>>, {id: number}> = (props) => {
           const {id} = props ?? {};
 
-          return  applyProject(id,)
+          return  applyProject(id,requestOptions)
         }
 
 
@@ -412,7 +414,7 @@ const {mutation: mutationOptions} = options ?
  * @summary 프로젝트 지원
  */
 export const useApplyProject = <TError = void,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof applyProject>>, TError,{id: number}, TContext>, }
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof applyProject>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customInstance>}
  , queryClient?: QueryClient): UseMutationResult<
         Awaited<ReturnType<typeof applyProject>>,
         TError,
@@ -479,15 +481,15 @@ export const updateStatus = async (id: number,
 
 
 export const getUpdateStatusMutationOptions = <TError = void,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateStatus>>, TError,{id: number;data: UpdateProjectStatusRequest}, TContext>, }
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateStatus>>, TError,{id: number;data: UpdateProjectStatusRequest}, TContext>, request?: SecondParameter<typeof customInstance>}
 ): UseMutationOptions<Awaited<ReturnType<typeof updateStatus>>, TError,{id: number;data: UpdateProjectStatusRequest}, TContext> => {
 
 const mutationKey = ['updateStatus'];
-const {mutation: mutationOptions} = options ?
+const {mutation: mutationOptions, request: requestOptions} = options ?
       options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
       options
       : {...options, mutation: {...options.mutation, mutationKey}}
-      : {mutation: { mutationKey, }};
+      : {mutation: { mutationKey, }, request: undefined};
 
 
 
@@ -495,7 +497,7 @@ const {mutation: mutationOptions} = options ?
       const mutationFn: MutationFunction<Awaited<ReturnType<typeof updateStatus>>, {id: number;data: UpdateProjectStatusRequest}> = (props) => {
           const {id,data} = props ?? {};
 
-          return  updateStatus(id,data,)
+          return  updateStatus(id,data,requestOptions)
         }
 
 
@@ -513,7 +515,7 @@ const {mutation: mutationOptions} = options ?
  * @summary 프로젝트 상태 변경
  */
 export const useUpdateStatus = <TError = void,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateStatus>>, TError,{id: number;data: UpdateProjectStatusRequest}, TContext>, }
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateStatus>>, TError,{id: number;data: UpdateProjectStatusRequest}, TContext>, request?: SecondParameter<typeof customInstance>}
  , queryClient?: QueryClient): UseMutationResult<
         Awaited<ReturnType<typeof updateStatus>>,
         TError,
@@ -581,16 +583,16 @@ export const getGetProjectQueryKey = (id: number,) => {
     }
 
 
-export const getGetProjectInfiniteQueryOptions = <TData = InfiniteData<Awaited<ReturnType<typeof getProject>>>, TError = void>(id: number, options?: { query?:Partial<UseInfiniteQueryOptions<Awaited<ReturnType<typeof getProject>>, TError, TData>>, }
+export const getGetProjectInfiniteQueryOptions = <TData = InfiniteData<Awaited<ReturnType<typeof getProject>>>, TError = void>(id: number, options?: { query?:Partial<UseInfiniteQueryOptions<Awaited<ReturnType<typeof getProject>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
 ) => {
 
-const {query: queryOptions} = options ?? {};
+const {query: queryOptions, request: requestOptions} = options ?? {};
 
   const queryKey =  queryOptions?.queryKey ?? getGetProjectInfiniteQueryKey(id);
 
 
 
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof getProject>>> = ({ signal }) => getProject(id, { signal });
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getProject>>> = ({ signal }) => getProject(id, { signal, ...requestOptions });
 
 
 
@@ -610,7 +612,7 @@ export function useGetProjectInfinite<TData = InfiniteData<Awaited<ReturnType<ty
           TError,
           Awaited<ReturnType<typeof getProject>>
         > , 'initialData'
-      >, }
+      >, request?: SecondParameter<typeof customInstance>}
  , queryClient?: QueryClient
   ):  DefinedUseInfiniteQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 export function useGetProjectInfinite<TData = InfiniteData<Awaited<ReturnType<typeof getProject>>>, TError = void>(
@@ -620,11 +622,11 @@ export function useGetProjectInfinite<TData = InfiniteData<Awaited<ReturnType<ty
           TError,
           Awaited<ReturnType<typeof getProject>>
         > , 'initialData'
-      >, }
+      >, request?: SecondParameter<typeof customInstance>}
  , queryClient?: QueryClient
   ):  UseInfiniteQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 export function useGetProjectInfinite<TData = InfiniteData<Awaited<ReturnType<typeof getProject>>>, TError = void>(
- id: number, options?: { query?:Partial<UseInfiniteQueryOptions<Awaited<ReturnType<typeof getProject>>, TError, TData>>, }
+ id: number, options?: { query?:Partial<UseInfiniteQueryOptions<Awaited<ReturnType<typeof getProject>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
  , queryClient?: QueryClient
   ):  UseInfiniteQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
@@ -632,7 +634,7 @@ export function useGetProjectInfinite<TData = InfiniteData<Awaited<ReturnType<ty
  */
 
 export function useGetProjectInfinite<TData = InfiniteData<Awaited<ReturnType<typeof getProject>>>, TError = void>(
- id: number, options?: { query?:Partial<UseInfiniteQueryOptions<Awaited<ReturnType<typeof getProject>>, TError, TData>>, }
+ id: number, options?: { query?:Partial<UseInfiniteQueryOptions<Awaited<ReturnType<typeof getProject>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
  , queryClient?: QueryClient
  ):  UseInfiniteQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
@@ -646,16 +648,16 @@ export function useGetProjectInfinite<TData = InfiniteData<Awaited<ReturnType<ty
 
 
 
-export const getGetProjectQueryOptions = <TData = Awaited<ReturnType<typeof getProject>>, TError = void>(id: number, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getProject>>, TError, TData>>, }
+export const getGetProjectQueryOptions = <TData = Awaited<ReturnType<typeof getProject>>, TError = void>(id: number, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getProject>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
 ) => {
 
-const {query: queryOptions} = options ?? {};
+const {query: queryOptions, request: requestOptions} = options ?? {};
 
   const queryKey =  queryOptions?.queryKey ?? getGetProjectQueryKey(id);
 
 
 
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof getProject>>> = ({ signal }) => getProject(id, { signal });
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getProject>>> = ({ signal }) => getProject(id, { signal, ...requestOptions });
 
 
 
@@ -675,7 +677,7 @@ export function useGetProject<TData = Awaited<ReturnType<typeof getProject>>, TE
           TError,
           Awaited<ReturnType<typeof getProject>>
         > , 'initialData'
-      >, }
+      >, request?: SecondParameter<typeof customInstance>}
  , queryClient?: QueryClient
   ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 export function useGetProject<TData = Awaited<ReturnType<typeof getProject>>, TError = void>(
@@ -685,11 +687,11 @@ export function useGetProject<TData = Awaited<ReturnType<typeof getProject>>, TE
           TError,
           Awaited<ReturnType<typeof getProject>>
         > , 'initialData'
-      >, }
+      >, request?: SecondParameter<typeof customInstance>}
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 export function useGetProject<TData = Awaited<ReturnType<typeof getProject>>, TError = void>(
- id: number, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getProject>>, TError, TData>>, }
+ id: number, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getProject>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
@@ -697,7 +699,7 @@ export function useGetProject<TData = Awaited<ReturnType<typeof getProject>>, TE
  */
 
 export function useGetProject<TData = Awaited<ReturnType<typeof getProject>>, TError = void>(
- id: number, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getProject>>, TError, TData>>, }
+ id: number, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getProject>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
  , queryClient?: QueryClient
  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
@@ -770,16 +772,16 @@ export const getGetMyProjectsQueryKey = () => {
     }
 
 
-export const getGetMyProjectsInfiniteQueryOptions = <TData = InfiniteData<Awaited<ReturnType<typeof getMyProjects>>>, TError = void>( options?: { query?:Partial<UseInfiniteQueryOptions<Awaited<ReturnType<typeof getMyProjects>>, TError, TData>>, }
+export const getGetMyProjectsInfiniteQueryOptions = <TData = InfiniteData<Awaited<ReturnType<typeof getMyProjects>>>, TError = void>( options?: { query?:Partial<UseInfiniteQueryOptions<Awaited<ReturnType<typeof getMyProjects>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
 ) => {
 
-const {query: queryOptions} = options ?? {};
+const {query: queryOptions, request: requestOptions} = options ?? {};
 
   const queryKey =  queryOptions?.queryKey ?? getGetMyProjectsInfiniteQueryKey();
 
 
 
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof getMyProjects>>> = ({ signal }) => getMyProjects({ signal });
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getMyProjects>>> = ({ signal }) => getMyProjects({ signal, ...requestOptions });
 
 
 
@@ -799,7 +801,7 @@ export function useGetMyProjectsInfinite<TData = InfiniteData<Awaited<ReturnType
           TError,
           Awaited<ReturnType<typeof getMyProjects>>
         > , 'initialData'
-      >, }
+      >, request?: SecondParameter<typeof customInstance>}
  , queryClient?: QueryClient
   ):  DefinedUseInfiniteQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 export function useGetMyProjectsInfinite<TData = InfiniteData<Awaited<ReturnType<typeof getMyProjects>>>, TError = void>(
@@ -809,11 +811,11 @@ export function useGetMyProjectsInfinite<TData = InfiniteData<Awaited<ReturnType
           TError,
           Awaited<ReturnType<typeof getMyProjects>>
         > , 'initialData'
-      >, }
+      >, request?: SecondParameter<typeof customInstance>}
  , queryClient?: QueryClient
   ):  UseInfiniteQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 export function useGetMyProjectsInfinite<TData = InfiniteData<Awaited<ReturnType<typeof getMyProjects>>>, TError = void>(
-  options?: { query?:Partial<UseInfiniteQueryOptions<Awaited<ReturnType<typeof getMyProjects>>, TError, TData>>, }
+  options?: { query?:Partial<UseInfiniteQueryOptions<Awaited<ReturnType<typeof getMyProjects>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
  , queryClient?: QueryClient
   ):  UseInfiniteQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
@@ -821,7 +823,7 @@ export function useGetMyProjectsInfinite<TData = InfiniteData<Awaited<ReturnType
  */
 
 export function useGetMyProjectsInfinite<TData = InfiniteData<Awaited<ReturnType<typeof getMyProjects>>>, TError = void>(
-  options?: { query?:Partial<UseInfiniteQueryOptions<Awaited<ReturnType<typeof getMyProjects>>, TError, TData>>, }
+  options?: { query?:Partial<UseInfiniteQueryOptions<Awaited<ReturnType<typeof getMyProjects>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
  , queryClient?: QueryClient
  ):  UseInfiniteQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
@@ -835,16 +837,16 @@ export function useGetMyProjectsInfinite<TData = InfiniteData<Awaited<ReturnType
 
 
 
-export const getGetMyProjectsQueryOptions = <TData = Awaited<ReturnType<typeof getMyProjects>>, TError = void>( options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getMyProjects>>, TError, TData>>, }
+export const getGetMyProjectsQueryOptions = <TData = Awaited<ReturnType<typeof getMyProjects>>, TError = void>( options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getMyProjects>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
 ) => {
 
-const {query: queryOptions} = options ?? {};
+const {query: queryOptions, request: requestOptions} = options ?? {};
 
   const queryKey =  queryOptions?.queryKey ?? getGetMyProjectsQueryKey();
 
 
 
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof getMyProjects>>> = ({ signal }) => getMyProjects({ signal });
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getMyProjects>>> = ({ signal }) => getMyProjects({ signal, ...requestOptions });
 
 
 
@@ -864,7 +866,7 @@ export function useGetMyProjects<TData = Awaited<ReturnType<typeof getMyProjects
           TError,
           Awaited<ReturnType<typeof getMyProjects>>
         > , 'initialData'
-      >, }
+      >, request?: SecondParameter<typeof customInstance>}
  , queryClient?: QueryClient
   ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 export function useGetMyProjects<TData = Awaited<ReturnType<typeof getMyProjects>>, TError = void>(
@@ -874,11 +876,11 @@ export function useGetMyProjects<TData = Awaited<ReturnType<typeof getMyProjects
           TError,
           Awaited<ReturnType<typeof getMyProjects>>
         > , 'initialData'
-      >, }
+      >, request?: SecondParameter<typeof customInstance>}
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 export function useGetMyProjects<TData = Awaited<ReturnType<typeof getMyProjects>>, TError = void>(
-  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getMyProjects>>, TError, TData>>, }
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getMyProjects>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
@@ -886,7 +888,7 @@ export function useGetMyProjects<TData = Awaited<ReturnType<typeof getMyProjects
  */
 
 export function useGetMyProjects<TData = Awaited<ReturnType<typeof getMyProjects>>, TError = void>(
-  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getMyProjects>>, TError, TData>>, }
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getMyProjects>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
  , queryClient?: QueryClient
  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 

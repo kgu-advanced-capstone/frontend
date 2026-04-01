@@ -6,7 +6,7 @@ import { Menu, X, LogOut, User, Bell, CheckCheck } from "lucide-react";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { buttonVariants } from "@/components/ui/button";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
   Popover,
   PopoverContent,
@@ -15,7 +15,7 @@ import {
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useAuth } from "@/contexts/AuthContext";
 import * as notificationApi from "@/api/generated/notification/notification";
-import { cn } from "@/lib/utils";
+import { cn, getProfileImageUrl } from "@/lib/utils";
 
 const navLinks = [
   { href: "/projects", label: "프로젝트 매칭" },
@@ -42,6 +42,8 @@ export default function Navbar() {
     await logout();
     setMobileOpen(false);
   };
+
+  const profileImageUrl = getProfileImageUrl(user?.profileImage);
 
   return (
     <nav className="fixed top-0 z-50 w-full border-b bg-background/80 backdrop-blur-md">
@@ -127,6 +129,9 @@ export default function Navbar() {
                 className="flex items-center gap-2 rounded-md px-2 py-1 transition-colors hover:bg-muted"
               >
                 <Avatar className="h-7 w-7">
+                  {profileImageUrl ? (
+                    <AvatarImage src={profileImageUrl} alt={user.name || ""} />
+                  ) : null}
                   <AvatarFallback className="bg-primary/10 text-xs text-primary">
                     {user.name?.[0] || "U"}
                   </AvatarFallback>
@@ -187,7 +192,14 @@ export default function Navbar() {
                     : "text-muted-foreground hover:bg-muted"
                 }`}
               >
-                <User size={16} />
+                <Avatar className="h-6 w-6">
+                  {profileImageUrl ? (
+                    <AvatarImage src={profileImageUrl} alt={user.name || ""} />
+                  ) : null}
+                  <AvatarFallback className="bg-primary/10 text-[10px] text-primary">
+                    {user.name?.[0] || "U"}
+                  </AvatarFallback>
+                </Avatar>
                 프로필 수정
               </Link>
               <div className="flex items-center justify-between">

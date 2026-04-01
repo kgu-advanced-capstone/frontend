@@ -31,10 +31,4 @@ export interface UpdateProfileRequest {
      * @maxLength 200
      */
   blog?: string;
-  /**
-     * 프로필 이미지 URL
-     * @minLength 0
-     * @maxLength 500
-     */
-  profileImage?: string;
 }

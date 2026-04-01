@@ -38,6 +38,8 @@ import type {
 import { customInstance } from '../../mutator/custom-instance';
 
 
+type SecondParameter<T extends (...args: never) => unknown> = Parameters<T>[1];
+
 
 
 /**
@@ -91,15 +93,15 @@ export const summarize = async (id: number, options?: RequestInit): Promise<summ
 
 
 export const getSummarizeMutationOptions = <TError = void,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof summarize>>, TError,{id: number}, TContext>, }
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof summarize>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customInstance>}
 ): UseMutationOptions<Awaited<ReturnType<typeof summarize>>, TError,{id: number}, TContext> => {
 
 const mutationKey = ['summarize'];
-const {mutation: mutationOptions} = options ?
+const {mutation: mutationOptions, request: requestOptions} = options ?
       options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
       options
       : {...options, mutation: {...options.mutation, mutationKey}}
-      : {mutation: { mutationKey, }};
+      : {mutation: { mutationKey, }, request: undefined};
 
 
 
@@ -107,7 +109,7 @@ const {mutation: mutationOptions} = options ?
       const mutationFn: MutationFunction<Awaited<ReturnType<typeof summarize>>, {id: number}> = (props) => {
           const {id} = props ?? {};
 
-          return  summarize(id,)
+          return  summarize(id,requestOptions)
         }
 
 
@@ -125,7 +127,7 @@ const {mutation: mutationOptions} = options ?
  * @summary 활동 기록 AI 요약
  */
 export const useSummarize = <TError = void,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof summarize>>, TError,{id: number}, TContext>, }
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof summarize>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customInstance>}
  , queryClient?: QueryClient): UseMutationResult<
         Awaited<ReturnType<typeof summarize>>,
         TError,
@@ -198,16 +200,16 @@ export const getGetByProjectQueryKey = (projectId: number,) => {
     }
 
 
-export const getGetByProjectInfiniteQueryOptions = <TData = InfiniteData<Awaited<ReturnType<typeof getByProject>>>, TError = void>(projectId: number, options?: { query?:Partial<UseInfiniteQueryOptions<Awaited<ReturnType<typeof getByProject>>, TError, TData>>, }
+export const getGetByProjectInfiniteQueryOptions = <TData = InfiniteData<Awaited<ReturnType<typeof getByProject>>>, TError = void>(projectId: number, options?: { query?:Partial<UseInfiniteQueryOptions<Awaited<ReturnType<typeof getByProject>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
 ) => {
 
-const {query: queryOptions} = options ?? {};
+const {query: queryOptions, request: requestOptions} = options ?? {};
 
   const queryKey =  queryOptions?.queryKey ?? getGetByProjectInfiniteQueryKey(projectId);
 
 
 
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof getByProject>>> = ({ signal }) => getByProject(projectId, { signal });
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getByProject>>> = ({ signal }) => getByProject(projectId, { signal, ...requestOptions });
 
 
 
@@ -227,7 +229,7 @@ export function useGetByProjectInfinite<TData = InfiniteData<Awaited<ReturnType<
           TError,
           Awaited<ReturnType<typeof getByProject>>
         > , 'initialData'
-      >, }
+      >, request?: SecondParameter<typeof customInstance>}
  , queryClient?: QueryClient
   ):  DefinedUseInfiniteQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 export function useGetByProjectInfinite<TData = InfiniteData<Awaited<ReturnType<typeof getByProject>>>, TError = void>(
@@ -237,11 +239,11 @@ export function useGetByProjectInfinite<TData = InfiniteData<Awaited<ReturnType<
           TError,
           Awaited<ReturnType<typeof getByProject>>
         > , 'initialData'
-      >, }
+      >, request?: SecondParameter<typeof customInstance>}
  , queryClient?: QueryClient
   ):  UseInfiniteQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 export function useGetByProjectInfinite<TData = InfiniteData<Awaited<ReturnType<typeof getByProject>>>, TError = void>(
- projectId: number, options?: { query?:Partial<UseInfiniteQueryOptions<Awaited<ReturnType<typeof getByProject>>, TError, TData>>, }
+ projectId: number, options?: { query?:Partial<UseInfiniteQueryOptions<Awaited<ReturnType<typeof getByProject>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
  , queryClient?: QueryClient
   ):  UseInfiniteQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
@@ -249,7 +251,7 @@ export function useGetByProjectInfinite<TData = InfiniteData<Awaited<ReturnType<
  */
 
 export function useGetByProjectInfinite<TData = InfiniteData<Awaited<ReturnType<typeof getByProject>>>, TError = void>(
- projectId: number, options?: { query?:Partial<UseInfiniteQueryOptions<Awaited<ReturnType<typeof getByProject>>, TError, TData>>, }
+ projectId: number, options?: { query?:Partial<UseInfiniteQueryOptions<Awaited<ReturnType<typeof getByProject>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
  , queryClient?: QueryClient
  ):  UseInfiniteQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
@@ -263,16 +265,16 @@ export function useGetByProjectInfinite<TData = InfiniteData<Awaited<ReturnType<
 
 
 
-export const getGetByProjectQueryOptions = <TData = Awaited<ReturnType<typeof getByProject>>, TError = void>(projectId: number, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getByProject>>, TError, TData>>, }
+export const getGetByProjectQueryOptions = <TData = Awaited<ReturnType<typeof getByProject>>, TError = void>(projectId: number, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getByProject>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
 ) => {
 
-const {query: queryOptions} = options ?? {};
+const {query: queryOptions, request: requestOptions} = options ?? {};
 
   const queryKey =  queryOptions?.queryKey ?? getGetByProjectQueryKey(projectId);
 
 
 
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof getByProject>>> = ({ signal }) => getByProject(projectId, { signal });
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getByProject>>> = ({ signal }) => getByProject(projectId, { signal, ...requestOptions });
 
 
 
@@ -292,7 +294,7 @@ export function useGetByProject<TData = Awaited<ReturnType<typeof getByProject>>
           TError,
           Awaited<ReturnType<typeof getByProject>>
         > , 'initialData'
-      >, }
+      >, request?: SecondParameter<typeof customInstance>}
  , queryClient?: QueryClient
   ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 export function useGetByProject<TData = Awaited<ReturnType<typeof getByProject>>, TError = void>(
@@ -302,11 +304,11 @@ export function useGetByProject<TData = Awaited<ReturnType<typeof getByProject>>
           TError,
           Awaited<ReturnType<typeof getByProject>>
         > , 'initialData'
-      >, }
+      >, request?: SecondParameter<typeof customInstance>}
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 export function useGetByProject<TData = Awaited<ReturnType<typeof getByProject>>, TError = void>(
- projectId: number, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getByProject>>, TError, TData>>, }
+ projectId: number, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getByProject>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
@@ -314,7 +316,7 @@ export function useGetByProject<TData = Awaited<ReturnType<typeof getByProject>>
  */
 
 export function useGetByProject<TData = Awaited<ReturnType<typeof getByProject>>, TError = void>(
- projectId: number, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getByProject>>, TError, TData>>, }
+ projectId: number, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getByProject>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
  , queryClient?: QueryClient
  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
@@ -381,15 +383,15 @@ export const upsert = async (projectId: number,
 
 
 export const getUpsertMutationOptions = <TError = void,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof upsert>>, TError,{projectId: number;data: ExperienceRequest}, TContext>, }
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof upsert>>, TError,{projectId: number;data: ExperienceRequest}, TContext>, request?: SecondParameter<typeof customInstance>}
 ): UseMutationOptions<Awaited<ReturnType<typeof upsert>>, TError,{projectId: number;data: ExperienceRequest}, TContext> => {
 
 const mutationKey = ['upsert'];
-const {mutation: mutationOptions} = options ?
+const {mutation: mutationOptions, request: requestOptions} = options ?
       options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
       options
       : {...options, mutation: {...options.mutation, mutationKey}}
-      : {mutation: { mutationKey, }};
+      : {mutation: { mutationKey, }, request: undefined};
 
 
 
@@ -397,7 +399,7 @@ const {mutation: mutationOptions} = options ?
       const mutationFn: MutationFunction<Awaited<ReturnType<typeof upsert>>, {projectId: number;data: ExperienceRequest}> = (props) => {
           const {projectId,data} = props ?? {};
 
-          return  upsert(projectId,data,)
+          return  upsert(projectId,data,requestOptions)
         }
 
 
@@ -415,7 +417,7 @@ const {mutation: mutationOptions} = options ?
  * @summary 활동 기록 등록/수정
  */
 export const useUpsert = <TError = void,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof upsert>>, TError,{projectId: number;data: ExperienceRequest}, TContext>, }
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof upsert>>, TError,{projectId: number;data: ExperienceRequest}, TContext>, request?: SecondParameter<typeof customInstance>}
  , queryClient?: QueryClient): UseMutationResult<
         Awaited<ReturnType<typeof upsert>>,
         TError,

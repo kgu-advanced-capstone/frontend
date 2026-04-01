@@ -22,6 +22,7 @@ export * from './projectSummaryResponse';
 export * from './registerRequest';
 export * from './resumeResponse';
 export * from './summarizedExperienceResponse';
+export * from './updateProfileBody';
 export * from './updateProfileRequest';
 export * from './updateProjectStatusRequest';
 export * from './updateProjectStatusRequestStatus';

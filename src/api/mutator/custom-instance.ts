@@ -9,11 +9,28 @@ import client from '../client';
 export const customInstance = <T>(url: string, config: any): Promise<T> => {
   const source = axios.CancelToken.source();
   
-  const { body, ...rest } = config;
+  const { body, headers, ...rest } = config;
+
+  // FormData 여부 확인
+  const isFormData = body instanceof FormData;
+
+  const axiosHeaders = { ...headers };
+  let finalData = body;
+
+  // FormData인 경우 Axios가 Content-Type을 바운더리와 함께 설정하도록 헤더에서 명시적으로 제거
+  if (isFormData) {
+    delete axiosHeaders['Content-Type'];
+    delete axiosHeaders['content-type'];
+    finalData = body;
+  } else {
+    finalData = body && typeof body === 'string' ? JSON.parse(body) : body;
+  }
+
   const axiosConfig: AxiosRequestConfig = {
     ...rest,
     url,
-    data: body ? (typeof body === 'string' ? JSON.parse(body) : body) : undefined,
+    data: finalData,
+    headers: axiosHeaders,
     cancelToken: source.token,
   };
 

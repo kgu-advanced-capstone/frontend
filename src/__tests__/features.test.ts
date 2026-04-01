@@ -54,7 +54,7 @@ describe("회원가입 & 인증", () => {
     });
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
-    expect(result.current.data?.data).toMatchObject({
+    expect((result.current.data as any).data).toMatchObject({
       email: "test@buildi.com",
       name: "홍길동",
     });
@@ -75,7 +75,7 @@ describe("회원가입 & 인증", () => {
     // me 조회
     const { result } = renderHookWithClient(() => authApi.useMe());
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
-    expect(result.current.data?.data?.name).toBe("홍길동");
+    expect((result.current.data as any).data.name).toBe("홍길동");
   });
 
   it("POST /auth/login — 로그인 성공 시 유저 정보 반환", async () => {
@@ -89,7 +89,7 @@ describe("회원가입 & 인증", () => {
     });
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
-    expect(result.current.data?.data).toMatchObject({
+    expect((result.current.data as any).data).toMatchObject({
       email: "test@buildi.com",
       name: "홍길동",
     });
@@ -130,8 +130,8 @@ describe("프로필 관리", () => {
 
     const { result } = renderHookWithClient(() => profileApi.useGetProfile());
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
-    expect(result.current.data?.data?.name).toBe("김개발");
-    expect(result.current.data?.data?.email).toBe("dev@buildi.com");
+    expect((result.current.data as any).data.name).toBe("김개발");
+    expect((result.current.data as any).data.email).toBe("dev@buildi.com");
   });
 
   it("PATCH /profile — 프로필 수정 (깃헙, 전화번호 등)", async () => {
@@ -148,13 +148,15 @@ describe("프로필 관리", () => {
     const { result } = renderHookWithClient(() => profileApi.useUpdateProfile());
     result.current.mutate({
       data: {
-        github: "https://github.com/kimdev",
-        phone: "010-1234-5678",
+        request: {
+          github: "https://github.com/kimdev",
+          phone: "010-1234-5678",
+        }
       }
     });
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
-    expect(result.current.data?.data).toMatchObject({
+    expect((result.current.data as profileApi.updateProfileResponseSuccess).data).toMatchObject({
       name: "김개발",
       github: "https://github.com/kimdev",
       phone: "010-1234-5678",
@@ -189,7 +191,7 @@ describe("프로젝트 생성 & 탐색", () => {
       }
     });
     await waitFor(() => expect(create.current.isSuccess).toBe(true));
-    return create.current.data!.data;
+    return (create.current.data as any).data;
   }
 
   it("POST /projects — 프로젝트 생성", async () => {
@@ -204,8 +206,8 @@ describe("프로젝트 생성 & 탐색", () => {
 
     const { result } = renderHookWithClient(() => projectApi.useGetProjects());
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
-    expect(result.current.data!.data.totalCount).toBe(1);
-    expect(result.current.data!.data.projects[0].title).toBe("AI 챗봇 개발");
+    expect((result.current.data as any).data.totalCount).toBe(1);
+    expect((result.current.data as any).data.projects[0].title).toBe("AI 챗봇 개발");
   });
 
   it("GET /projects — 카테고리 필터", async () => {
@@ -221,8 +223,8 @@ describe("프로젝트 생성 & 탐색", () => {
       projectApi.useGetProjects({ category: "AI" })
     );
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
-    expect(result.current.data!.data.totalCount).toBe(1);
-    expect(result.current.data!.data.projects[0].category).toBe("AI");
+    expect((result.current.data as any).data.totalCount).toBe(1);
+    expect((result.current.data as any).data.projects[0].category).toBe("AI");
   });
 
   it("GET /projects — 검색", async () => {
@@ -236,7 +238,7 @@ describe("프로젝트 생성 & 탐색", () => {
       projectApi.useGetProjects({ search: "챗봇" })
     );
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
-    expect(result.current.data!.data.totalCount).toBe(1);
+    expect((result.current.data as any).data.totalCount).toBe(1);
   });
 
   it("GET /projects — 페이지네이션", async () => {
@@ -254,15 +256,15 @@ describe("프로젝트 생성 & 탐색", () => {
       projectApi.useGetProjects({ page: 1, limit: 2 })
     );
     await waitFor(() => expect(p1.current.isSuccess).toBe(true));
-    expect(p1.current.data!.data.projects).toHaveLength(2);
-    expect(p1.current.data!.data.totalCount).toBe(3);
+    expect((p1.current.data as any).data.projects).toHaveLength(2);
+    expect((p1.current.data as any).data.totalCount).toBe(3);
 
     // page=2
     const { result: p2 } = renderHookWithClient(() =>
       projectApi.useGetProjects({ page: 2, limit: 2 })
     );
     await waitFor(() => expect(p2.current.isSuccess).toBe(true));
-    expect(p2.current.data!.data.projects).toHaveLength(1);
+    expect((p2.current.data as any).data.projects).toHaveLength(1);
   });
 
   it("GET /projects/:id — 프로젝트 상세 조회", async () => {
@@ -270,9 +272,9 @@ describe("프로젝트 생성 & 탐색", () => {
 
     const { result } = renderHookWithClient(() => projectApi.useGetProject(project.id));
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
-    expect(result.current.data!.data.title).toBe("AI 챗봇 개발");
-    expect(result.current.data!.data.description).toBe("GPT 기반 챗봇 프로젝트");
-    expect(result.current.data!.data.skills).toEqual(["Python", "FastAPI"]);
+    expect((result.current.data as any).data.title).toBe("AI 챗봇 개발");
+    expect((result.current.data as any).data.description).toBe("GPT 기반 챗봇 프로젝트");
+    expect((result.current.data as any).data.skills).toEqual(["Python", "FastAPI"]);
   });
 });
 
@@ -301,7 +303,7 @@ describe("프로젝트 참가 & 내 프로젝트", () => {
       }
     });
     await waitFor(() => expect(create.current.isSuccess).toBe(true));
-    const projectId = create.current.data!.data.id;
+    const projectId = (create.current.data as any).data.id;
 
     // 참가 신청
     const { result: apply } = renderHookWithClient(() => projectApi.useApplyProject());
@@ -313,7 +315,7 @@ describe("프로젝트 참가 & 내 프로젝트", () => {
       projectApi.useGetProject(projectId)
     );
     await waitFor(() => expect(detail.current.isSuccess).toBe(true));
-    expect(detail.current.data!.data.currentMembers).toBe(2); // 1(생성자) + 1(참가)
+    expect((detail.current.data as any).data.currentMembers).toBe(2); // 1(생성자) + 1(참가)
   });
 
   it("GET /projects/my — 내 프로젝트 목록에 표시", async () => {
@@ -333,9 +335,9 @@ describe("프로젝트 참가 & 내 프로젝트", () => {
 
     const { result } = renderHookWithClient(() => projectApi.useGetMyProjects());
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
-    expect(result.current.data?.data).toHaveLength(1);
-    expect(result.current.data!.data[0].isOwner).toBe(true);
-    expect(result.current.data!.data[0].status).toBe("recruiting");
+    expect((result.current.data as any).data).toHaveLength(1);
+    expect((result.current.data as any).data[0].isOwner).toBe(true);
+    expect((result.current.data as any).data[0].status).toBe("recruiting");
   });
 });
 
@@ -357,7 +359,7 @@ describe("프로젝트 상태 관리", () => {
     const { result: create } = renderHookWithClient(() => projectApi.useCreateProject());
     create.current.mutate({ data: { title: "상태테스트", category: "웹" } });
     await waitFor(() => expect(create.current.isSuccess).toBe(true));
-    const projectId = create.current.data!.data.id;
+    const projectId = (create.current.data as any).data.id;
 
     // 진행중으로 변경
     const { result: s1 } = renderHookWithClient(() =>
@@ -369,7 +371,7 @@ describe("프로젝트 상태 관리", () => {
     // 내 프로젝트에서 상태 확인
     const { result: my1 } = renderHookWithClient(() => projectApi.useGetMyProjects());
     await waitFor(() => expect(my1.current.isSuccess).toBe(true));
-    expect(my1.current.data!.data[0].status).toBe("in-progress");
+    expect((my1.current.data as any).data[0].status).toBe("in-progress");
 
     // 완료로 변경
     const { result: s2 } = renderHookWithClient(() =>
@@ -380,7 +382,7 @@ describe("프로젝트 상태 관리", () => {
 
     const { result: my2 } = renderHookWithClient(() => projectApi.useGetMyProjects());
     await waitFor(() => expect(my2.current.isSuccess).toBe(true));
-    expect(my2.current.data!.data[0].status).toBe("completed");
+    expect((my2.current.data as any).data[0].status).toBe("completed");
   });
 });
 
@@ -402,7 +404,7 @@ describe("경험 기록 & AI 요약", () => {
     const { result: create } = renderHookWithClient(() => projectApi.useCreateProject());
     create.current.mutate({ data: { title: "경험 프로젝트", category: "웹" } });
     await waitFor(() => expect(create.current.isSuccess).toBe(true));
-    return create.current.data!.data.id;
+    return (create.current.data as any).data.id;
   }
 
   it("POST /experiences/project/:pid — 경험 작성", async () => {
@@ -418,8 +420,8 @@ describe("경험 기록 & AI 요약", () => {
       }
     });
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
-    expect(result.current.data?.data.content).toContain("React와 TypeScript");
-    expect(result.current.data?.data.aiSummary).toBeNull();
+    expect((result.current.data as any)?.data.content).toContain("React와 TypeScript");
+    expect((result.current.data as any)?.data.aiSummary).toBeNull();
   });
 
   it("POST /experiences/project/:pid — 경험 수정 (upsert)", async () => {
@@ -438,7 +440,7 @@ describe("경험 기록 & AI 요약", () => {
     );
     w2.current.mutate({ projectId, data: { content: "수정된 내용입니다" } });
     await waitFor(() => expect(w2.current.isSuccess).toBe(true));
-    expect(w2.current.data?.data.content).toBe("수정된 내용입니다");
+    expect((w2.current.data as any)?.data.content).toBe("수정된 내용입니다");
   });
 
   it("GET /experiences/project/:pid — 경험 목록 조회", async () => {
@@ -452,8 +454,8 @@ describe("경험 기록 & AI 요약", () => {
 
     const { result } = renderHookWithClient(() => experienceApi.useGetByProject(projectId));
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
-    expect(result.current.data?.data).toHaveLength(1);
-    expect(result.current.data?.data[0].content).toBe("프론트엔드 작업 내역");
+    expect((result.current.data as any)?.data).toHaveLength(1);
+    expect((result.current.data as any)?.data[0].content).toBe("프론트엔드 작업 내역");
   });
 
   it("POST /experiences/:id/summarize — AI 요약 생성", async () => {
@@ -470,14 +472,14 @@ describe("경험 기록 & AI 요약", () => {
       }
     });
     await waitFor(() => expect(upsert.current.isSuccess).toBe(true));
-    const expId = upsert.current.data!.data.id;
+    const expId = (upsert.current.data as any).data.id;
 
     const { result: summarize } = renderHookWithClient(() =>
       experienceApi.useSummarize()
     );
     summarize.current.mutate({ id: expId });
     await waitFor(() => expect(summarize.current.isSuccess).toBe(true));
-    expect(summarize.current.data?.data.aiSummary).toContain("[AI 요약]");
+    expect((summarize.current.data as any)?.data.aiSummary).toContain("[AI 요약]");
   });
 });
 
@@ -498,14 +500,20 @@ describe("이력서 생성 & 조회", () => {
     await waitFor(() => expect(reg.current.isSuccess).toBe(true));
 
     const { result: profile } = renderHookWithClient(() => profileApi.useUpdateProfile());
-    profile.current.mutate({ data: { github: "https://github.com/userA" } });
+    profile.current.mutate({
+      data: {
+        request: {
+          github: "https://github.com/userA",
+        }
+      }
+    });
     await waitFor(() => expect(profile.current.isSuccess).toBe(true));
 
     // 프로젝트 생성 + 경험 작성 + AI 요약
     const { result: create } = renderHookWithClient(() => projectApi.useCreateProject());
     create.current.mutate({ data: { title: "이력서용 프로젝트", category: "웹" } });
     await waitFor(() => expect(create.current.isSuccess).toBe(true));
-    const projectId = create.current.data!.data.id;
+    const projectId = (create.current.data as any).data.id;
 
     const { result: upsert } = renderHookWithClient(() =>
       experienceApi.useUpsert()
@@ -516,7 +524,7 @@ describe("이력서 생성 & 조회", () => {
     const { result: summarize } = renderHookWithClient(() =>
       experienceApi.useSummarize()
     );
-    summarize.current.mutate({ id: upsert.current.data!.data.id });
+    summarize.current.mutate({ id: (upsert.current.data as any).data.id });
     await waitFor(() => expect(summarize.current.isSuccess).toBe(true));
 
     // 이력서 생성
@@ -527,15 +535,15 @@ describe("이력서 생성 & 조회", () => {
     // 이력서 조회
     const { result: resume } = renderHookWithClient(() => resumeApi.useGetResume());
     await waitFor(() => expect(resume.current.isSuccess).toBe(true));
-    expect(resume.current.data?.data.basicInfo.name).toBe("유저A");
-    expect(resume.current.data?.data.basicInfo.github).toBe(
+    expect((resume.current.data as any).data.basicInfo.name).toBe("유저A");
+    expect((resume.current.data as any).data.basicInfo.github).toBe(
       "https://github.com/userA"
     );
-    expect(resume.current.data?.data.summarizedExperiences).toHaveLength(1);
+    expect((resume.current.data as any).data.summarizedExperiences).toHaveLength(1);
     expect(
-      resume.current.data?.data.summarizedExperiences[0].projectTitle
+      (resume.current.data as any).data.summarizedExperiences[0].projectTitle
     ).toBe("이력서용 프로젝트");
-    expect(resume.current.data?.data.generatedAt).toBeTruthy();
+    expect((resume.current.data as any).data.generatedAt).toBeTruthy();
   });
 });
 
@@ -558,7 +566,7 @@ describe("알림 시스템", () => {
     const { result: create } = renderHookWithClient(() => projectApi.useCreateProject());
     create.current.mutate({ data: { title: "알림테스트", category: "웹" } });
     await waitFor(() => expect(create.current.isSuccess).toBe(true));
-    const projectId = create.current.data!.data.id;
+    const projectId = (create.current.data as any).data.id;
 
     // 참가 → 알림 2
     const { result: apply } = renderHookWithClient(() => projectApi.useApplyProject());
@@ -574,8 +582,8 @@ describe("알림 시스템", () => {
 
     const { result } = renderHookWithClient(() => notificationApi.useGetNotifications());
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
-    expect(result.current.data?.data.length).toBeGreaterThanOrEqual(3);
-    expect(result.current.data?.data.every((n: any) => !n.read)).toBe(true);
+    expect((result.current.data as any).data.length).toBeGreaterThanOrEqual(3);
+    expect((result.current.data as any).data.every((n: any) => !n.read)).toBe(true);
   });
 
   it("PATCH /notifications/:id/read — 개별 알림 읽음 처리", async () => {
@@ -597,7 +605,7 @@ describe("알림 시스템", () => {
     // 알림 조회
     const { result: notifs } = renderHookWithClient(() => notificationApi.useGetNotifications());
     await waitFor(() => expect(notifs.current.isSuccess).toBe(true));
-    const notifId = notifs.current.data!.data[0].id;
+    const notifId = (notifs.current.data as any).data[0].id;
 
     // 개별 읽음
     const { result: mark } = renderHookWithClient(() => notificationApi.useMarkAsRead());
@@ -607,7 +615,7 @@ describe("알림 시스템", () => {
     // 확인
     const { result: check } = renderHookWithClient(() => notificationApi.useGetNotifications());
     await waitFor(() => expect(check.current.isSuccess).toBe(true));
-    expect(check.current.data!.data.find((n: any) => n.id === notifId)?.read).toBe(true);
+    expect((check.current.data as any).data.find((n: any) => n.id === notifId)?.read).toBe(true);
   });
 
   it("PATCH /notifications/read-all — 전체 알림 읽음 처리", async () => {
@@ -638,7 +646,7 @@ describe("알림 시스템", () => {
     // 확인
     const { result: check } = renderHookWithClient(() => notificationApi.useGetNotifications());
     await waitFor(() => expect(check.current.isSuccess).toBe(true));
-    expect(check.current.data!.data.every((n: any) => n.read)).toBe(true);
+    expect((check.current.data as any).data.every((n: any) => n.read)).toBe(true);
   });
 });
 
@@ -661,7 +669,7 @@ describe("전체 유저 플로우 (모든 API 통합)", () => {
     // 2) 로그인 확인
     const { result: me } = renderHookWithClient(() => authApi.useMe());
     await waitFor(() => expect(me.current.isSuccess).toBe(true));
-    expect(me.current.data?.data?.name).toBe("풀플로우");
+    expect((me.current.data as any).data?.name).toBe("풀플로우");
 
     // 3) 프로필 수정
     const { result: updateProf } = renderHookWithClient(() =>
@@ -669,9 +677,11 @@ describe("전체 유저 플로우 (모든 API 통합)", () => {
     );
     updateProf.current.mutate({
       data: {
-        github: "https://github.com/fullflow",
-        blog: "https://blog.fullflow.dev",
-        phone: "010-9999-8888",
+        request: {
+          github: "https://github.com/fullflow",
+          blog: "https://blog.fullflow.dev",
+          phone: "010-9999-8888",
+        }
       }
     });
     await waitFor(() => expect(updateProf.current.isSuccess).toBe(true));
@@ -679,7 +689,7 @@ describe("전체 유저 플로우 (모든 API 통합)", () => {
     // 4) 프로필 조회 확인
     const { result: prof } = renderHookWithClient(() => profileApi.useGetProfile());
     await waitFor(() => expect(prof.current.isSuccess).toBe(true));
-    expect(prof.current.data?.data?.github).toBe("https://github.com/fullflow");
+    expect((prof.current.data as any).data?.github).toBe("https://github.com/fullflow");
 
     // 5) 프로젝트 생성
     const { result: createP } = renderHookWithClient(() => projectApi.useCreateProject());
@@ -694,19 +704,19 @@ describe("전체 유저 플로우 (모든 API 통합)", () => {
       }
     });
     await waitFor(() => expect(createP.current.isSuccess).toBe(true));
-    const projectId = createP.current.data!.data.id;
+    const projectId = (createP.current.data as any).data.id;
 
     // 6) 프로젝트 목록 조회
     const { result: list } = renderHookWithClient(() => projectApi.useGetProjects());
     await waitFor(() => expect(list.current.isSuccess).toBe(true));
-    expect(list.current.data?.data.totalCount).toBe(1);
+    expect((list.current.data as any).data.totalCount).toBe(1);
 
     // 7) 프로젝트 상세 조회
     const { result: detail } = renderHookWithClient(() =>
       projectApi.useGetProject(projectId)
     );
     await waitFor(() => expect(detail.current.isSuccess).toBe(true));
-    expect(detail.current.data?.data.skills).toContain("React");
+    expect((detail.current.data as any).data.skills).toContain("React");
 
     // 8) 프로젝트 참가 신청
     const { result: apply } = renderHookWithClient(() => projectApi.useApplyProject());
@@ -716,7 +726,7 @@ describe("전체 유저 플로우 (모든 API 통합)", () => {
     // 9) 내 프로젝트 확인
     const { result: myP } = renderHookWithClient(() => projectApi.useGetMyProjects());
     await waitFor(() => expect(myP.current.isSuccess).toBe(true));
-    expect(myP.current.data?.data.length).toBeGreaterThanOrEqual(1);
+    expect((myP.current.data as any).data.length).toBeGreaterThanOrEqual(1);
 
     // 10) 프로젝트 상태 변경 → 진행중
     const { result: toProgress } = renderHookWithClient(() =>
@@ -737,14 +747,14 @@ describe("전체 유저 플로우 (모든 API 통합)", () => {
       }
     });
     await waitFor(() => expect(writeExp.current.isSuccess).toBe(true));
-    const expId = writeExp.current.data!.data.id;
+    const expId = (writeExp.current.data as any).data.id;
 
     // 12) 경험 조회
     const { result: exps } = renderHookWithClient(() =>
       experienceApi.useGetByProject(projectId)
     );
     await waitFor(() => expect(exps.current.isSuccess).toBe(true));
-    expect(exps.current.data?.data).toHaveLength(1);
+    expect((exps.current.data as any).data).toHaveLength(1);
 
     // 13) AI 요약
     const { result: summarize } = renderHookWithClient(() =>
@@ -752,7 +762,7 @@ describe("전체 유저 플로우 (모든 API 통합)", () => {
     );
     summarize.current.mutate({ id: expId });
     await waitFor(() => expect(summarize.current.isSuccess).toBe(true));
-    expect(summarize.current.data?.data.aiSummary).toContain("[AI 요약]");
+    expect((summarize.current.data as any).data.aiSummary).toContain("[AI 요약]");
 
     // 14) 프로젝트 완료 처리
     const { result: toComplete } = renderHookWithClient(() =>
@@ -771,18 +781,18 @@ describe("전체 유저 플로우 (모든 API 통합)", () => {
     // 16) 이력서 조회
     const { result: resume } = renderHookWithClient(() => resumeApi.useGetResume());
     await waitFor(() => expect(resume.current.isSuccess).toBe(true));
-    expect(resume.current.data?.data.basicInfo.name).toBe("풀플로우");
-    expect(resume.current.data?.data.summarizedExperiences.length).toBeGreaterThan(
+    expect((resume.current.data as any).data.basicInfo.name).toBe("풀플로우");
+    expect((resume.current.data as any).data.summarizedExperiences.length).toBeGreaterThan(
       0
     );
 
     // 17) 알림 조회 — 여러 활동으로 알림 누적
     const { result: notifs } = renderHookWithClient(() => notificationApi.useGetNotifications());
     await waitFor(() => expect(notifs.current.isSuccess).toBe(true));
-    expect(notifs.current.data?.data.length).toBeGreaterThanOrEqual(4);
+    expect((notifs.current.data as any).data.length).toBeGreaterThanOrEqual(4);
 
     // 18) 개별 알림 읽음
-    const firstNotifId = notifs.current.data!.data[0].id;
+    const firstNotifId = (notifs.current.data as any).data[0].id;
     const { result: markOne } = renderHookWithClient(() => notificationApi.useMarkAsRead());
     markOne.current.mutate({ id: firstNotifId });
     await waitFor(() => expect(markOne.current.isSuccess).toBe(true));
@@ -797,6 +807,6 @@ describe("전체 유저 플로우 (모든 API 통합)", () => {
       notificationApi.useGetNotifications()
     );
     await waitFor(() => expect(finalNotifs.current.isSuccess).toBe(true));
-    expect(finalNotifs.current.data?.data.every((n: any) => n.read)).toBe(true);
+    expect((finalNotifs.current.data as any).data.every((n: any) => n.read)).toBe(true);
   });
 });
