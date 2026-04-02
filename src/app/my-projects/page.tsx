@@ -394,7 +394,7 @@ export default function MyProjectsPage() {
                         매칭이 완료되어 프로젝트가 &quot;진행&quot; 상태로 변경되면 경험 기록을 작성할 수 있습니다.
                       </p>
                       <p className="mt-3 text-xs text-amber-500">
-                        현재 {mp.project?.currentMembers}/{mp.project?.maxMembers}명 참여 중
+                        현재 {mp.project?.participants?.length ?? 0}/{mp.project?.maxMembers ?? 0}명 참여 중
                         {mp.project?.deadline && ` · 마감일: ${mp.project.deadline}`}
                       </p>
                     </div>

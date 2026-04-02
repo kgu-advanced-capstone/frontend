@@ -5,6 +5,7 @@
  * 스웨거 API 명세.
  * OpenAPI spec version: v1.0.0
  */
+import type { ParticipantResponse } from './participantResponse';
 
 export interface ProjectDetailResponse {
   /** 프로젝트 고유 ID */
@@ -16,8 +17,7 @@ export interface ProjectDetailResponse {
   /** 카테고리 */
   category?: string;
   skills?: unknown[];
-  /** 현재 팀원 수 */
-  currentMembers?: number;
+  participants?: ParticipantResponse[];
   /** 최대 팀원 수 */
   maxMembers?: number;
   /** 모집 마감일 (yyyy-MM-dd) */

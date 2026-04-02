@@ -15,6 +15,7 @@ export * from './loginRequest';
 export * from './myProjectResponse';
 export * from './myProjectResponseStatus';
 export * from './notificationResponse';
+export * from './participantResponse';
 export * from './profileResponse';
 export * from './projectDetailResponse';
 export * from './projectListResponse';
