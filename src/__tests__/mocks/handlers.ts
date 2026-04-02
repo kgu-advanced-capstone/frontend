@@ -214,7 +214,7 @@ export const handlers = [
         title: p.title,
         category: p.category,
         skills: p.skills,
-        currentMembers: p.currentMembers,
+        currentMembers: p.participants?.length || 0,
         maxMembers: p.maxMembers,
         author: p.author,
         createdAt: p.createdAt,
@@ -238,7 +238,11 @@ export const handlers = [
       description: body.description ?? undefined,
       category: body.category,
       skills: body.skills || [],
-      currentMembers: 1,
+      participants: [{
+        userId: currentUser?.id,
+        name: currentUser?.name,
+        joinedAt: "2026-03-30",
+      }],
       maxMembers: body.maxMembers || 4,
       deadline: body.deadline ?? undefined,
       author: currentUser?.name || "Unknown",
@@ -272,8 +276,18 @@ export const handlers = [
     if (!project) {
       return HttpResponse.json({ message: "Not Found" }, { status: 404 });
     }
-    if (project.currentMembers !== undefined) {
-      project.currentMembers += 1;
+    if (project.participants) {
+      project.participants.push({
+        userId: currentUser?.id,
+        name: currentUser?.name,
+        joinedAt: "2026-03-30",
+      });
+    } else {
+      project.participants = [{
+        userId: currentUser?.id,
+        name: currentUser?.name,
+        joinedAt: "2026-03-30",
+      }];
     }
     myProjects.push({
       project,

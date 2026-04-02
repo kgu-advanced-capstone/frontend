@@ -199,7 +199,7 @@ describe("프로젝트 생성 & 탐색", () => {
     const project = await registerAndCreateProject();
     expect(project.title).toBe("AI 챗봇 개발");
     expect(project.category).toBe("AI");
-    expect(project.currentMembers).toBe(1);
+    expect(project.participants?.length).toBe(1);
   });
 
   it("GET /projects — 프로젝트 목록 조회 (전체)", async () => {
@@ -316,7 +316,7 @@ describe("프로젝트 참가 & 내 프로젝트", () => {
       projectApi.useGetProject(projectId)
     );
     await waitFor(() => expect(detail.current.isSuccess).toBe(true));
-    expect((detail.current.data as any).data.currentMembers).toBe(2); // 1(생성자) + 1(참가)
+    expect((detail.current.data as any).data.participants?.length).toBe(2); // 1(생성자) + 1(참가)
   });
 
   it("GET /projects/my — 내 프로젝트 목록에 표시", async () => {

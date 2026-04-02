@@ -55,7 +55,7 @@ export default function ProjectDetailPage({
     );
   }
 
-  const isFull = (project.currentMembers ?? 0) >= (project.maxMembers ?? 0);
+  const isFull = (project.participants?.length ?? 0) >= (project.maxMembers ?? 0);
 
   const handleJoin = () => {
     if (!project.id) return;
@@ -141,7 +141,7 @@ export default function ProjectDetailPage({
               <div className="flex items-center gap-3 text-sm">
                 <Users size={16} className="text-muted-foreground" />
                 <span>
-                  {project.currentMembers ?? 0}/{project.maxMembers ?? 0}명 참여 중
+                  {project.participants?.length ?? 0}/{project.maxMembers ?? 0}명 참여 중
                 </span>
               </div>
               {project.deadline && (

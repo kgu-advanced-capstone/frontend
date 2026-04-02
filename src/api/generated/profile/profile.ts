@@ -268,7 +268,7 @@ export const getUpdateProfileUrl = () => {
 
 export const updateProfile = async (updateProfileBody: UpdateProfileBody, options?: RequestInit): Promise<updateProfileResponse> => {
     const formData = new FormData();
-formData.append(`request`, new Blob([JSON.stringify(updateProfileBody.request)], { type: 'application/json' }));
+formData.append(`request`, JSON.stringify(updateProfileBody.request));
 if(updateProfileBody.profileImage !== undefined) {
  formData.append(`profileImage`, updateProfileBody.profileImage);
  }
