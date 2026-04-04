@@ -6,7 +6,6 @@ import type {
   ExperienceResponse,
   MyProjectResponse,
   NotificationResponse,
-  ProfileResponse,
   ProjectDetailResponse,
   ProjectListResponse,
   RegisterRequest,
@@ -329,7 +328,8 @@ export const handlers = [
     const projectId = Number(params.projectId);
     const exps = experiences
       .filter((e) => e.projectId === projectId)
-      .map(({ projectId: _, ...rest }) => rest);
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      .map(({ projectId: _projectId, ...rest }) => rest);
     return HttpResponse.json(exps);
   }),
 
@@ -341,7 +341,8 @@ export const handlers = [
     const existing = experiences.find((e) => e.projectId === projectId);
     if (existing) {
       existing.content = body.content;
-      const { projectId: _, ...rest } = existing;
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      const { projectId: _projectId, ...rest } = existing;
       return HttpResponse.json(rest);
     }
 
@@ -353,6 +354,7 @@ export const handlers = [
       projectId,
     };
     experiences.push(exp);
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const { projectId: _pid, ...rest } = exp;
     return HttpResponse.json(rest);
   }),
