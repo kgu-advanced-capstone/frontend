@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import Link from "next/link";
 import {
   Brain,
@@ -112,16 +112,12 @@ function ExperienceSection({ projectId }: { projectId: number }) {
     }
   );
 
-  useEffect(() => {
-    if (
-      summaryStatus?.status === AiSummaryStatusResponseStatus.COMPLETED ||
-      summaryStatus?.status === AiSummaryStatusResponseStatus.FAILED
-    ) {
-      setPollingExpId(null);
-    }
-  }, [summaryStatus?.status]);
+  const pollingDone =
+    summaryStatus?.status === AiSummaryStatusResponseStatus.COMPLETED ||
+    summaryStatus?.status === AiSummaryStatusResponseStatus.FAILED;
 
-  const isSummarizing = startSummarizeMutation.isPending || pollingExpId !== null;
+  const isSummarizing =
+    startSummarizeMutation.isPending || (pollingExpId !== null && !pollingDone);
 
   // 경험 내용이 로드되면 content 동기화
   const currentContent = existing?.content ?? "";

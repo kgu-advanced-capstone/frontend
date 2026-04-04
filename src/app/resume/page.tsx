@@ -23,7 +23,7 @@ export default function ResumePage() {
   });
 
   // 이력서 조회
-  const { data: resume, isLoading, isError, status } = resumeApi.useGetResume({
+  const { data: resume, isLoading, status } = resumeApi.useGetResume({
     query: {
       select: (res) => res.data,
       retry: false, // 404 등의 경우 재시도하지 않음
