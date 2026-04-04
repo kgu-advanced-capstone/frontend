@@ -13,6 +13,7 @@ import {
   Save,
   Pencil,
   Users,
+  User,
   Clock,
   Play,
   CheckCircle,
@@ -394,6 +395,26 @@ export default function MyProjectsPage() {
                         ))}
                       </div>
                       <p className="mt-2 text-xs text-muted-foreground">참여일: {mp.joinedAt}</p>
+                      {(mp.project?.participants?.length ?? 0) > 0 && (
+                        <div className="mt-3">
+                          <p className="text-xs font-medium text-muted-foreground mb-1.5">
+                            참여자 ({mp.project!.participants!.length}/{mp.project?.maxMembers ?? 0})
+                          </p>
+                          <div className="flex flex-wrap gap-2">
+                            {mp.project!.participants!.map((p) => (
+                              <div key={p.userId} className="flex items-center gap-1.5 rounded-full border bg-muted/40 px-2.5 py-1 text-xs">
+                                {p.profileImage ? (
+                                  // eslint-disable-next-line @next/next/no-img-element
+                                  <img src={p.profileImage} alt={p.name ?? ""} className="h-4 w-4 rounded-full object-cover" />
+                                ) : (
+                                  <User size={12} className="text-muted-foreground" />
+                                )}
+                                <span>{p.name}</span>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
                     </div>
                     {mp.isOwner && next && mp.project?.id && (
                       <Button
@@ -420,10 +441,9 @@ export default function MyProjectsPage() {
                       <p className="mt-1 text-sm text-amber-600">
                         매칭이 완료되어 프로젝트가 &quot;진행&quot; 상태로 변경되면 경험 기록을 작성할 수 있습니다.
                       </p>
-                      <p className="mt-3 text-xs text-amber-500">
-                        현재 {mp.project?.participants?.length ?? 0}/{mp.project?.maxMembers ?? 0}명 참여 중
-                        {mp.project?.deadline && ` · 마감일: ${mp.project.deadline}`}
-                      </p>
+                      {mp.project?.deadline && (
+                        <p className="mt-3 text-xs text-amber-500">마감일: {mp.project.deadline}</p>
+                      )}
                     </div>
                   ) : (
                     <ExperienceSection projectId={mp.project?.id || 0} />
