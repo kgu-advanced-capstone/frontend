@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useCallback } from "react";
 import { FileText, ArrowRight, FolderOpen, Download, Loader2, Sparkles, RefreshCw } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
@@ -43,6 +44,78 @@ export default function ResumePage() {
   const handleGenerate = () => {
     generateMutation.mutate();
   };
+
+  const handleDownloadPDF = useCallback(() => {
+    if (!resume) return;
+
+    const name = resume.basicInfo?.name || "이름";
+    const email = resume.basicInfo?.email || "";
+    const phone = resume.basicInfo?.phone || "";
+    const github = resume.basicInfo?.github || "";
+    const blog = resume.basicInfo?.blog || "";
+
+    const experiencesHtml = (resume.summarizedExperiences ?? [])
+      .map(
+        (exp) => `
+        <div class="experience">
+          <p class="exp-title">${exp.projectTitle ?? ""}</p>
+          <ul>${(exp.keyPoints ?? []).map((kp) => `<li>${String(kp)}</li>`).join("")}</ul>
+        </div>`
+      )
+      .join("");
+
+    const contactParts = [email, phone].filter(Boolean).join(" &nbsp;•&nbsp; ");
+    const linkParts = [
+      github ? `<a href="${github}">GitHub</a>` : "",
+      blog ? `<a href="${blog}">Blog</a>` : "",
+    ]
+      .filter(Boolean)
+      .join(" &nbsp;•&nbsp; ");
+
+    const html = `<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8" />
+  <title>이력서 - ${name}</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: 'Apple SD Gothic Neo', 'Noto Sans KR', sans-serif; padding: 48px; color: #111; background: #fff; }
+    h1 { font-size: 28px; font-weight: 700; text-align: center; margin-bottom: 6px; }
+    .contact { text-align: center; font-size: 13px; color: #555; margin-bottom: 4px; }
+    .links { text-align: center; font-size: 13px; margin-bottom: 24px; }
+    .links a { color: #2563eb; text-decoration: underline; }
+    hr { border: none; border-top: 1px solid #e5e7eb; margin: 20px 0; }
+    .section-title { font-size: 14px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; border-left: 4px solid #111; padding-left: 10px; margin-bottom: 16px; }
+    .experience { margin-bottom: 20px; }
+    .exp-title { font-weight: 700; font-size: 14px; margin-bottom: 6px; }
+    ul { list-style: none; padding: 0; }
+    li { font-size: 13px; color: #444; line-height: 1.7; padding-left: 14px; position: relative; }
+    li::before { content: "•"; position: absolute; left: 0; color: #6b7280; }
+    .footer { font-size: 10px; color: #9ca3af; text-align: center; margin-top: 32px; }
+    @media print { body { padding: 24px; } }
+  </style>
+</head>
+<body>
+  <h1>${name}</h1>
+  ${contactParts ? `<p class="contact">${contactParts}</p>` : ""}
+  ${linkParts ? `<p class="links">${linkParts}</p>` : ""}
+  <hr />
+  <p class="section-title">Project Experience</p>
+  ${experiencesHtml}
+  <hr />
+  <p class="footer">본 이력서는 AI에 의해 생성되었습니다.</p>
+</body>
+</html>`;
+
+    const printWindow = window.open("", "_blank", "width=820,height=1060");
+    if (!printWindow) return;
+    printWindow.document.write(html);
+    printWindow.document.close();
+    printWindow.onload = () => {
+      printWindow.focus();
+      printWindow.print();
+    };
+  }, [resume]);
 
   const isNotFound = status === "error" || !resume;
   const hasResumeData = resume && resume.summarizedExperiences && resume.summarizedExperiences.length > 0;
@@ -200,15 +273,15 @@ export default function ResumePage() {
 
           {/* 미리보기 */}
           <div className="relative">
-            <Card className="sticky top-8 border-primary/20 shadow-lg">
-              <CardHeader className="flex flex-row items-center justify-between bg-primary/5 pb-4">
+            <Card className="sticky top-8 border-primary/20 shadow-lg bg-white">
+              <CardHeader className="flex flex-row items-center justify-between bg-white pb-4">
                 <div>
                   <CardTitle className="flex items-center gap-2">
                     <FileText size={18} className="text-primary" />
                     이력서 미리보기
                   </CardTitle>
                 </div>
-                <Button variant="outline" size="sm" className="bg-white">
+                <Button variant="outline" size="sm" className="bg-white" onClick={handleDownloadPDF}>
                   <Download size={14} className="mr-1" />
                   PDF 다운로드
                 </Button>
