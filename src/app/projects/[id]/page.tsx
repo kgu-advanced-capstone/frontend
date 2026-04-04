@@ -2,7 +2,7 @@
 
 import { use, useState } from "react";
 import Link from "next/link";
-import { ArrowLeft, Users, Calendar, User, CheckCircle } from "lucide-react";
+import { ArrowLeft, Users, Calendar, User, CheckCircle, Github, Globe } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -128,6 +128,56 @@ export default function ProjectDetailPage({
                   </Badge>
                 ))}
               </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>참여자 목록</CardTitle>
+            </CardHeader>
+            <CardContent>
+              {(project.participants?.length ?? 0) === 0 ? (
+                <p className="text-sm text-muted-foreground">아직 참여자가 없습니다.</p>
+              ) : (
+                <ul className="space-y-4">
+                  {project.participants?.map((p) => (
+                    <li key={p.userId} className="flex items-center justify-between gap-3">
+                      <div className="flex items-center gap-3">
+                        {p.profileImage ? (
+                          // eslint-disable-next-line @next/next/no-img-element
+                          <img
+                            src={p.profileImage}
+                            alt={p.name ?? ""}
+                            className="h-9 w-9 rounded-full object-cover"
+                          />
+                        ) : (
+                          <div className="flex h-9 w-9 items-center justify-center rounded-full bg-muted">
+                            <User size={16} className="text-muted-foreground" />
+                          </div>
+                        )}
+                        <div>
+                          <p className="text-sm font-medium">{p.name}</p>
+                          {p.joinedAt && (
+                            <p className="text-xs text-muted-foreground">{p.joinedAt} 참여</p>
+                          )}
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        {p.github && (
+                          <a href={p.github} target="_blank" rel="noopener noreferrer" className="text-muted-foreground hover:text-foreground transition-colors">
+                            <Github size={16} />
+                          </a>
+                        )}
+                        {p.blog && (
+                          <a href={p.blog} target="_blank" rel="noopener noreferrer" className="text-muted-foreground hover:text-foreground transition-colors">
+                            <Globe size={16} />
+                          </a>
+                        )}
+                      </div>
+                    </li>
+                  ))}
+                </ul>
+              )}
             </CardContent>
           </Card>
         </div>
