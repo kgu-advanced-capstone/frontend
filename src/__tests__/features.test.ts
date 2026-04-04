@@ -476,7 +476,7 @@ describe("경험 기록 & AI 요약", () => {
     const expId = (upsert.current.data as any).data.id;
 
     const { result: summarize } = renderHookWithClient(() =>
-      experienceApi.useSummarize()
+      experienceApi.useStartSummarize()
     );
     summarize.current.mutate({ id: expId });
     await waitFor(() => expect(summarize.current.isSuccess).toBe(true));
@@ -523,7 +523,7 @@ describe("이력서 생성 & 조회", () => {
     await waitFor(() => expect(upsert.current.isSuccess).toBe(true));
 
     const { result: summarize } = renderHookWithClient(() =>
-      experienceApi.useSummarize()
+      experienceApi.useStartSummarize()
     );
     summarize.current.mutate({ id: (upsert.current.data as any).data.id });
     await waitFor(() => expect(summarize.current.isSuccess).toBe(true));
@@ -759,7 +759,7 @@ describe("전체 유저 플로우 (모든 API 통합)", () => {
 
     // 13) AI 요약
     const { result: summarize } = renderHookWithClient(() =>
-      experienceApi.useSummarize()
+      experienceApi.useStartSummarize()
     );
     summarize.current.mutate({ id: expId });
     await waitFor(() => expect(summarize.current.isSuccess).toBe(true));

@@ -6,7 +6,8 @@
  * OpenAPI spec version: v1.0.0
  */
 
-export * from './aiSummaryResponse';
+export * from './aiSummaryStatusResponse';
+export * from './aiSummaryStatusResponseStatus';
 export * from './createProjectRequest';
 export * from './experienceRequest';
 export * from './experienceResponse';

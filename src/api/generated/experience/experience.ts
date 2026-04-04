@@ -30,7 +30,7 @@ import type {
 } from '@tanstack/react-query';
 
 import type {
-  AiSummaryResponse,
+  AiSummaryStatusResponse,
   ExperienceRequest,
   ExperienceResponse
 } from '../model';
@@ -43,34 +43,39 @@ type SecondParameter<T extends (...args: never) => unknown> = Parameters<T>[1];
 
 
 /**
- * 활동 기록을 AI가 분석하여 요약합니다.
- * @summary 활동 기록 AI 요약
+ * AI 요약 진행 상태를 조회합니다. status: NONE / IN_PROGRESS / COMPLETED / FAILED
+ * @summary AI 요약 상태 조회 (폴링용)
  */
-export type summarizeResponse200 = {
-  data: AiSummaryResponse
+export type getSummaryStatusResponse200 = {
+  data: AiSummaryStatusResponse
   status: 200
 }
 
-export type summarizeResponse401 = {
+export type getSummaryStatusResponse401 = {
   data: void
   status: 401
 }
 
-export type summarizeResponse404 = {
+export type getSummaryStatusResponse403 = {
+  data: void
+  status: 403
+}
+
+export type getSummaryStatusResponse404 = {
   data: void
   status: 404
 }
 
-export type summarizeResponseSuccess = (summarizeResponse200) & {
+export type getSummaryStatusResponseSuccess = (getSummaryStatusResponse200) & {
   headers: Headers;
 };
-export type summarizeResponseError = (summarizeResponse401 | summarizeResponse404) & {
+export type getSummaryStatusResponseError = (getSummaryStatusResponse401 | getSummaryStatusResponse403 | getSummaryStatusResponse404) & {
   headers: Headers;
 };
 
-export type summarizeResponse = (summarizeResponseSuccess | summarizeResponseError)
+export type getSummaryStatusResponse = (getSummaryStatusResponseSuccess | getSummaryStatusResponseError)
 
-export const getSummarizeUrl = (id: number,) => {
+export const getGetSummaryStatusUrl = (id: number,) => {
 
 
 
@@ -78,9 +83,213 @@ export const getSummarizeUrl = (id: number,) => {
   return `/api/experiences/${id}/summarize`
 }
 
-export const summarize = async (id: number, options?: RequestInit): Promise<summarizeResponse> => {
+export const getSummaryStatus = async (id: number, options?: RequestInit): Promise<getSummaryStatusResponse> => {
 
-  return customInstance<summarizeResponse>(getSummarizeUrl(id),
+  return customInstance<getSummaryStatusResponse>(getGetSummaryStatusUrl(id),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetSummaryStatusInfiniteQueryKey = (id: number,) => {
+    return [
+    'infinite', `/api/experiences/${id}/summarize`
+    ] as const;
+    }
+
+export const getGetSummaryStatusQueryKey = (id: number,) => {
+    return [
+    `/api/experiences/${id}/summarize`
+    ] as const;
+    }
+
+
+export const getGetSummaryStatusInfiniteQueryOptions = <TData = InfiniteData<Awaited<ReturnType<typeof getSummaryStatus>>>, TError = void>(id: number, options?: { query?:Partial<UseInfiniteQueryOptions<Awaited<ReturnType<typeof getSummaryStatus>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetSummaryStatusInfiniteQueryKey(id);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getSummaryStatus>>> = ({ signal }) => getSummaryStatus(id, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: !!(id),  staleTime: 60000,  ...queryOptions} as UseInfiniteQueryOptions<Awaited<ReturnType<typeof getSummaryStatus>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type GetSummaryStatusInfiniteQueryResult = NonNullable<Awaited<ReturnType<typeof getSummaryStatus>>>
+export type GetSummaryStatusInfiniteQueryError = void
+
+
+export function useGetSummaryStatusInfinite<TData = InfiniteData<Awaited<ReturnType<typeof getSummaryStatus>>>, TError = void>(
+ id: number, options: { query:Partial<UseInfiniteQueryOptions<Awaited<ReturnType<typeof getSummaryStatus>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getSummaryStatus>>,
+          TError,
+          Awaited<ReturnType<typeof getSummaryStatus>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+  ):  DefinedUseInfiniteQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetSummaryStatusInfinite<TData = InfiniteData<Awaited<ReturnType<typeof getSummaryStatus>>>, TError = void>(
+ id: number, options?: { query?:Partial<UseInfiniteQueryOptions<Awaited<ReturnType<typeof getSummaryStatus>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getSummaryStatus>>,
+          TError,
+          Awaited<ReturnType<typeof getSummaryStatus>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+  ):  UseInfiniteQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetSummaryStatusInfinite<TData = InfiniteData<Awaited<ReturnType<typeof getSummaryStatus>>>, TError = void>(
+ id: number, options?: { query?:Partial<UseInfiniteQueryOptions<Awaited<ReturnType<typeof getSummaryStatus>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+  ):  UseInfiniteQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * @summary AI 요약 상태 조회 (폴링용)
+ */
+
+export function useGetSummaryStatusInfinite<TData = InfiniteData<Awaited<ReturnType<typeof getSummaryStatus>>>, TError = void>(
+ id: number, options?: { query?:Partial<UseInfiniteQueryOptions<Awaited<ReturnType<typeof getSummaryStatus>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+ ):  UseInfiniteQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getGetSummaryStatusInfiniteQueryOptions(id,options)
+
+  const query = useInfiniteQuery(queryOptions, queryClient) as  UseInfiniteQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+export const getGetSummaryStatusQueryOptions = <TData = Awaited<ReturnType<typeof getSummaryStatus>>, TError = void>(id: number, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getSummaryStatus>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetSummaryStatusQueryKey(id);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getSummaryStatus>>> = ({ signal }) => getSummaryStatus(id, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: !!(id),  staleTime: 60000,  ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getSummaryStatus>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type GetSummaryStatusQueryResult = NonNullable<Awaited<ReturnType<typeof getSummaryStatus>>>
+export type GetSummaryStatusQueryError = void
+
+
+export function useGetSummaryStatus<TData = Awaited<ReturnType<typeof getSummaryStatus>>, TError = void>(
+ id: number, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getSummaryStatus>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getSummaryStatus>>,
+          TError,
+          Awaited<ReturnType<typeof getSummaryStatus>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetSummaryStatus<TData = Awaited<ReturnType<typeof getSummaryStatus>>, TError = void>(
+ id: number, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getSummaryStatus>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getSummaryStatus>>,
+          TError,
+          Awaited<ReturnType<typeof getSummaryStatus>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetSummaryStatus<TData = Awaited<ReturnType<typeof getSummaryStatus>>, TError = void>(
+ id: number, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getSummaryStatus>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * @summary AI 요약 상태 조회 (폴링용)
+ */
+
+export function useGetSummaryStatus<TData = Awaited<ReturnType<typeof getSummaryStatus>>, TError = void>(
+ id: number, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getSummaryStatus>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getGetSummaryStatusQueryOptions(id,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+/**
+ * 활동 기록 AI 요약을 비동기로 시작합니다. 상태는 GET /{id}/summarize로 폴링합니다.
+ * @summary AI 요약 시작 (비동기)
+ */
+export type startSummarizeResponse202 = {
+  data: AiSummaryStatusResponse
+  status: 202
+}
+
+export type startSummarizeResponse401 = {
+  data: void
+  status: 401
+}
+
+export type startSummarizeResponse403 = {
+  data: void
+  status: 403
+}
+
+export type startSummarizeResponse404 = {
+  data: void
+  status: 404
+}
+
+export type startSummarizeResponse409 = {
+  data: void
+  status: 409
+}
+
+export type startSummarizeResponseSuccess = (startSummarizeResponse202) & {
+  headers: Headers;
+};
+export type startSummarizeResponseError = (startSummarizeResponse401 | startSummarizeResponse403 | startSummarizeResponse404 | startSummarizeResponse409) & {
+  headers: Headers;
+};
+
+export type startSummarizeResponse = (startSummarizeResponseSuccess | startSummarizeResponseError)
+
+export const getStartSummarizeUrl = (id: number,) => {
+
+
+
+
+  return `/api/experiences/${id}/summarize`
+}
+
+export const startSummarize = async (id: number, options?: RequestInit): Promise<startSummarizeResponse> => {
+
+  return customInstance<startSummarizeResponse>(getStartSummarizeUrl(id),
   {
     ...options,
     method: 'POST'
@@ -92,11 +301,11 @@ export const summarize = async (id: number, options?: RequestInit): Promise<summ
 
 
 
-export const getSummarizeMutationOptions = <TError = void,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof summarize>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customInstance>}
-): UseMutationOptions<Awaited<ReturnType<typeof summarize>>, TError,{id: number}, TContext> => {
+export const getStartSummarizeMutationOptions = <TError = void,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof startSummarize>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customInstance>}
+): UseMutationOptions<Awaited<ReturnType<typeof startSummarize>>, TError,{id: number}, TContext> => {
 
-const mutationKey = ['summarize'];
+const mutationKey = ['startSummarize'];
 const {mutation: mutationOptions, request: requestOptions} = options ?
       options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
       options
@@ -106,10 +315,10 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
 
 
 
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof summarize>>, {id: number}> = (props) => {
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof startSummarize>>, {id: number}> = (props) => {
           const {id} = props ?? {};
 
-          return  summarize(id,requestOptions)
+          return  startSummarize(id,requestOptions)
         }
 
 
@@ -119,22 +328,22 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
 
   return  { mutationFn, ...mutationOptions }}
 
-    export type SummarizeMutationResult = NonNullable<Awaited<ReturnType<typeof summarize>>>
+    export type StartSummarizeMutationResult = NonNullable<Awaited<ReturnType<typeof startSummarize>>>
 
-    export type SummarizeMutationError = void
+    export type StartSummarizeMutationError = void
 
     /**
- * @summary 활동 기록 AI 요약
+ * @summary AI 요약 시작 (비동기)
  */
-export const useSummarize = <TError = void,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof summarize>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customInstance>}
+export const useStartSummarize = <TError = void,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof startSummarize>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customInstance>}
  , queryClient?: QueryClient): UseMutationResult<
-        Awaited<ReturnType<typeof summarize>>,
+        Awaited<ReturnType<typeof startSummarize>>,
         TError,
         {id: number},
         TContext
       > => {
-      return useMutation(getSummarizeMutationOptions(options), queryClient);
+      return useMutation(getStartSummarizeMutationOptions(options), queryClient);
     }
     /**
  * 특정 프로젝트에 대한 내 활동 기록 목록을 조회합니다.

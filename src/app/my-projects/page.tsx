@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import {
   Brain,
@@ -38,6 +38,7 @@ import { categories } from "@/data/dummy";
 import * as projectApi from "@/api/generated/project/project";
 import * as experienceApi from "@/api/generated/experience/experience";
 import type { ProjectStatus } from "@/api/types";
+import { AiSummaryStatusResponseStatus } from "@/api/types";
 
 const statusConfig: Record<ProjectStatus, { label: string; color: string; icon: typeof Clock }> = {
   recruiting: {
@@ -86,7 +87,7 @@ function ExperienceSection({ projectId }: { projectId: number }) {
     }
   });
   const upsertMutation = experienceApi.useUpsert();
-  const summarizeMutation = experienceApi.useSummarize();
+  const startSummarizeMutation = experienceApi.useStartSummarize();
 
   const existing = experiences[0];
   const [content, setContent] = useState(existing?.content ?? "");
@@ -94,6 +95,33 @@ function ExperienceSection({ projectId }: { projectId: number }) {
   const [editDraft, setEditDraft] = useState("");
   const [copiedId, setCopiedId] = useState(false);
   const [savedSummary, setSavedSummary] = useState(false);
+  const [pollingExpId, setPollingExpId] = useState<number | null>(null);
+
+  const { data: summaryStatus } = experienceApi.useGetSummaryStatus(
+    pollingExpId ?? 0,
+    {
+      query: {
+        enabled: pollingExpId !== null,
+        refetchInterval: (query) => {
+          const status = (query.state.data as { data?: { status?: string } } | undefined)?.data?.status;
+          if (status === AiSummaryStatusResponseStatus.COMPLETED || status === AiSummaryStatusResponseStatus.FAILED) return false;
+          return 2000;
+        },
+        select: (res) => res.data,
+      },
+    }
+  );
+
+  useEffect(() => {
+    if (
+      summaryStatus?.status === AiSummaryStatusResponseStatus.COMPLETED ||
+      summaryStatus?.status === AiSummaryStatusResponseStatus.FAILED
+    ) {
+      setPollingExpId(null);
+    }
+  }, [summaryStatus?.status]);
+
+  const isSummarizing = startSummarizeMutation.isPending || pollingExpId !== null;
 
   // 경험 내용이 로드되면 content 동기화
   const currentContent = existing?.content ?? "";
@@ -108,7 +136,10 @@ function ExperienceSection({ projectId }: { projectId: number }) {
 
   const handleSummarize = () => {
     if (!existing || typeof existing.id === 'undefined') return;
-    summarizeMutation.mutate({ id: existing.id });
+    startSummarizeMutation.mutate(
+      { id: existing.id },
+      { onSuccess: () => setPollingExpId(existing.id!) }
+    );
   };
 
   const handleCopy = async (text: string) => {
@@ -150,9 +181,9 @@ function ExperienceSection({ projectId }: { projectId: number }) {
       <div className="flex items-center gap-3">
         <Button
           onClick={handleSummarize}
-          disabled={!existing || summarizeMutation.isPending}
+          disabled={!existing || isSummarizing}
         >
-          {summarizeMutation.isPending ? (
+          {isSummarizing ? (
             <>
               <div className="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-primary-foreground/30 border-t-primary-foreground" />
               요약 중...
@@ -172,7 +203,7 @@ function ExperienceSection({ projectId }: { projectId: number }) {
       </div>
 
       {/* AI 요약 결과 */}
-      {(existing?.aiSummary || summarizeMutation.data?.data?.aiSummary) && (
+      {(existing?.aiSummary || summaryStatus?.aiSummary) && (
         <div className="rounded-lg border bg-primary/5 p-6">
           <div className="mb-3 flex items-center justify-between">
             <div className="flex items-center gap-2 text-sm font-medium text-primary">
@@ -201,7 +232,7 @@ function ExperienceSection({ projectId }: { projectId: number }) {
                   size="sm"
                   onClick={() => {
                     setEditDraft(
-                      summarizeMutation.data?.data?.aiSummary ?? existing?.aiSummary ?? ""
+                      summaryStatus?.aiSummary ?? existing?.aiSummary ?? ""
                     );
                     setIsEditing(true);
                   }}
@@ -215,7 +246,7 @@ function ExperienceSection({ projectId }: { projectId: number }) {
                 size="sm"
                 onClick={() =>
                   handleCopy(
-                    summarizeMutation.data?.data?.aiSummary ?? existing?.aiSummary ?? ""
+                    summaryStatus?.aiSummary ?? existing?.aiSummary ?? ""
                   )
                 }
               >
@@ -241,7 +272,7 @@ function ExperienceSection({ projectId }: { projectId: number }) {
             />
           ) : (
             <div className="whitespace-pre-wrap text-sm leading-relaxed">
-              {summarizeMutation.data?.data?.aiSummary ?? existing?.aiSummary}
+              {summaryStatus?.aiSummary ?? existing?.aiSummary}
               {savedSummary && (
                 <p className="mt-3 flex items-center gap-1 text-xs text-green-600">
                   <Check size={12} />

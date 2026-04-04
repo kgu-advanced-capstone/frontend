@@ -1,6 +1,6 @@
 import { http, HttpResponse } from "msw";
 import type {
-  AiSummaryResponse,
+  AiSummaryStatusResponse,
   CreateProjectRequest,
   ExperienceRequest,
   ExperienceResponse,
@@ -38,7 +38,7 @@ let nextProjectId = 1;
 
 let myProjects: MyProjectResponse[] = [];
 
-let experiences: (ExperienceResponse & { projectId: number })[] = [];
+let experiences: (ExperienceResponse & { projectId: number; summaryStatus?: string })[] = [];
 let nextExpId = 1;
 
 let notifications: NotificationResponse[] = [];
@@ -357,7 +357,7 @@ export const handlers = [
     return HttpResponse.json(rest);
   }),
 
-  // POST /experiences/:id/summarize
+  // POST /experiences/:id/summarize (AI 요약 시작 — 비동기, 202)
   http.post(`${BASE}/experiences/:id/summarize`, ({ params }) => {
     const id = Number(params.id);
     const exp = experiences.find((e) => e.id === id);
@@ -366,9 +366,25 @@ export const handlers = [
     }
     if (exp.content) {
       exp.aiSummary = `[AI 요약] ${exp.content.slice(0, 50)}`;
+      exp.summaryStatus = "COMPLETED";
     }
-    const res: AiSummaryResponse = { id: exp.id, aiSummary: exp.aiSummary };
+    const res: AiSummaryStatusResponse = { id: exp.id, status: "COMPLETED", aiSummary: exp.aiSummary };
     addNotification("AI 요약이 완료되었습니다.");
+    return HttpResponse.json(res, { status: 202 });
+  }),
+
+  // GET /experiences/:id/summarize (AI 요약 상태 폴링)
+  http.get(`${BASE}/experiences/:id/summarize`, ({ params }) => {
+    const id = Number(params.id);
+    const exp = experiences.find((e) => e.id === id);
+    if (!exp) {
+      return HttpResponse.json({ message: "Not Found" }, { status: 404 });
+    }
+    const res: AiSummaryStatusResponse = {
+      id: exp.id,
+      status: (exp.summaryStatus ?? "NONE") as AiSummaryStatusResponse["status"],
+      aiSummary: exp.aiSummary,
+    };
     return HttpResponse.json(res);
   }),
 
