@@ -3,28 +3,31 @@ import client from '../client';
 
 /**
  * Orval 커스텀 인스턴스
- * Orval v8+ 은 mutator 사용 시 fetch 스타일의 config를 전달하며,
- * 응답으로 { data, status, headers } 구조를 기대하는 경우가 많습니다 (특히 OpenAPI에 여러 응답 코드가 정의된 경우).
+ *
+ * [FormData 전송 시 Content-Type 처리]
+ * Axios는 PATCH/POST/PUT 요청에 인스턴스 기본값으로 Content-Type: application/json을 설정한다.
+ * FormData 전송 시 이 기본값이 살아있으면 Axios의 transformRequest가 FormData를 JSON으로
+ * 직렬화하거나 application/octet-stream으로 전송하는 버그가 생긴다.
+ *
+ * 헤더 값을 null로 설정하면 Axios가 요청·인스턴스·전역 세 단계의 기본값을 모두 무시하고
+ * 헤더를 완전히 제거한다. 이후 브라우저 XHR이 FormData를 감지해
+ * multipart/form-data; boundary=... 를 자동으로 설정한다.
  */
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export const customInstance = <T>(url: string, config: any): Promise<T> => {
   const source = axios.CancelToken.source();
-  
+
   const { body, headers, ...rest } = config;
 
-  // FormData 여부 확인
   const isFormData = body instanceof FormData;
 
   const axiosHeaders = { ...headers };
   let finalData = body;
 
   if (isFormData) {
-    // Axios는 PATCH/POST/PUT에 기본으로 Content-Type: application/json을 설정한다.
-    // FormData 전송 시 이 기본값이 우선 적용되어 multipart 대신 JSON으로 직렬화되는 버그가 생긴다.
-    // → transformRequest를 빈 배열로 교체해 Axios의 기본 변환을 완전히 우회하고,
-    //   Content-Type 헤더도 명시적으로 제거해 브라우저가 boundary와 함께 자동 설정하게 한다.
-    delete axiosHeaders['Content-Type'];
-    delete axiosHeaders['content-type'];
+    // null로 설정해야 Axios 인스턴스 기본값(application/json)까지 완전히 제거된다.
+    // delete로는 request 레벨 헤더만 제거되고 인스턴스 기본값이 남는다.
+    axiosHeaders['Content-Type'] = null;
     finalData = body;
   } else {
     finalData = body && typeof body === 'string' ? JSON.parse(body) : body;
@@ -36,7 +39,6 @@ export const customInstance = <T>(url: string, config: any): Promise<T> => {
     data: finalData,
     headers: axiosHeaders,
     cancelToken: source.token,
-    ...(isFormData ? { transformRequest: [(data: unknown) => data] } : {}),
   };
 
   const promise = client(axiosConfig).then((res) => {
