@@ -18,8 +18,11 @@ export const customInstance = <T>(url: string, config: any): Promise<T> => {
   const axiosHeaders = { ...headers };
   let finalData = body;
 
-  // FormData인 경우 Axios가 Content-Type을 바운더리와 함께 설정하도록 헤더에서 명시적으로 제거
   if (isFormData) {
+    // Axios는 PATCH/POST/PUT에 기본으로 Content-Type: application/json을 설정한다.
+    // FormData 전송 시 이 기본값이 우선 적용되어 multipart 대신 JSON으로 직렬화되는 버그가 생긴다.
+    // → transformRequest를 빈 배열로 교체해 Axios의 기본 변환을 완전히 우회하고,
+    //   Content-Type 헤더도 명시적으로 제거해 브라우저가 boundary와 함께 자동 설정하게 한다.
     delete axiosHeaders['Content-Type'];
     delete axiosHeaders['content-type'];
     finalData = body;
@@ -33,6 +36,7 @@ export const customInstance = <T>(url: string, config: any): Promise<T> => {
     data: finalData,
     headers: axiosHeaders,
     cancelToken: source.token,
+    ...(isFormData ? { transformRequest: [(data: unknown) => data] } : {}),
   };
 
   const promise = client(axiosConfig).then((res) => {
