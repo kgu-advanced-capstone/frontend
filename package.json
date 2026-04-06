@@ -9,6 +9,7 @@
     "lint": "eslint",
     "test": "vitest run",
     "test:watch": "vitest",
+    "test:integration": "vitest run --config vitest.integration.config.ts",
     "api:generate": "curl https://pcserver.cloud/v3/api-docs > openapi.json && sed -i '' 's/\"\\*\\/\\*\"/\"application\\/json\"/g' openapi.json && npx orval"
   },
   "dependencies": {
