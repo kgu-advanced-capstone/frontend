@@ -2,6 +2,35 @@ import axios, { AxiosRequestConfig } from 'axios';
 import client from '../client';
 
 /**
+ * FormData의 string 엔트리 중 JSON 객체/배열인 경우 application/json Blob으로 변환한다.
+ * Spring Boot @RequestPart는 JSON 파트에 Content-Type: application/json을 요구하는데,
+ * Orval 생성 코드가 JSON.stringify() 결과를 plain string으로 append하여 text/plain이 됨.
+ */
+export function normalizeFormData(raw: FormData): FormData {
+  const out = new FormData();
+  for (const [key, value] of raw.entries()) {
+    if (typeof value === 'string') {
+      try {
+        const parsed = JSON.parse(value);
+        if (parsed !== null && typeof parsed === 'object') {
+          // JSON 객체/배열 → application/json Blob으로 변환
+          out.append(key, new Blob([value], { type: 'application/json' }));
+        } else {
+          out.append(key, value);
+        }
+      } catch {
+        out.append(key, value);
+      }
+    } else if (value instanceof File) {
+      out.append(key, value, value.name);
+    } else {
+      out.append(key, value);
+    }
+  }
+  return out;
+}
+
+/**
  * Orval 커스텀 인스턴스
  *
  * FormData 전송 시에는 fetch를 사용한다.
@@ -16,10 +45,11 @@ export const customInstance = <T>(url: string, config: any): Promise<T> => {
   // FormData 전송: fetch 사용 (Content-Type 자동 설정 보장)
   if (body instanceof FormData) {
     const controller = new AbortController();
+    const formData = normalizeFormData(body);
 
     const promise = fetch(url, {
       method: (rest.method as string) || 'GET',
-      body,
+      body: formData,
       credentials: 'include',
       headers: {
         Accept: 'application/json',
