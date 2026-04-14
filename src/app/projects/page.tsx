@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { Search, CheckCircle, AlertTriangle } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -26,6 +26,12 @@ export default function ProjectsPage() {
   const [joinedProject, setJoinedProject] = useState<string | null>(null);
   const { track } = useTrack();
   const searchTrackTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (searchTrackTimer.current) clearTimeout(searchTrackTimer.current);
+    };
+  }, []);
 
   const { data, isLoading } = projectApi.useGetProjects({
     category: category === "전체" ? undefined : category,
@@ -64,10 +70,10 @@ export default function ProjectsPage() {
 
   const handleConfirmJoin = () => {
     if (!confirmProject) return;
-    track("project_join_confirm", { projectId: confirmProject.id, title: confirmProject.title });
+    track("project_join_confirm", { projectId: confirmProject.id });
     applyMutation.mutate({ id: confirmProject.id }, {
       onSuccess: () => {
-        track("project_join_success", { projectId: confirmProject.id, title: confirmProject.title });
+        track("project_join_success", { projectId: confirmProject.id });
         setJoinedProject(confirmProject.title);
         setConfirmProject(null);
       },
