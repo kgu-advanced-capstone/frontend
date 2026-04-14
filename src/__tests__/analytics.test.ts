@@ -11,11 +11,18 @@ vi.mock("mixpanel-browser", () => ({
 }));
 
 // 모킹 이후에 import해야 mock이 적용됨
-import { trackEvent, trackPageView, initAnalytics } from "@/lib/analytics";
+import {
+  trackEvent,
+  trackPageView,
+  initAnalytics,
+  _resetAnalyticsForTesting,
+} from "@/lib/analytics";
 
 describe("analytics 모듈", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    vi.unstubAllEnvs();
+    _resetAnalyticsForTesting();
     // window.gtag 초기화
     const win = window as Window & { gtag?: unknown };
     delete win.gtag;
@@ -39,7 +46,16 @@ describe("analytics 모듈", () => {
       ).not.toThrow();
     });
 
-    it("Mixpanel에 이벤트와 속성을 전송한다", () => {
+    it("Mixpanel 초기화 전에는 track을 호출하지 않는다", () => {
+      trackEvent("project_join_click", { projectId: 1, title: "테스트 프로젝트" });
+
+      expect(mockMixpanel.track).not.toHaveBeenCalled();
+    });
+
+    it("Mixpanel 초기화 후 이벤트와 속성을 전송한다", async () => {
+      vi.stubEnv("NEXT_PUBLIC_MIXPANEL_TOKEN", "test-token");
+      await initAnalytics();
+
       trackEvent("project_join_click", { projectId: 1, title: "테스트 프로젝트" });
 
       expect(mockMixpanel.track).toHaveBeenCalledWith(
@@ -48,9 +64,11 @@ describe("analytics 모듈", () => {
       );
     });
 
-    it("속성 없이 이벤트만 전송할 수 있다", () => {
+    it("속성 없이 이벤트만 전송할 수 있다", async () => {
+      vi.stubEnv("NEXT_PUBLIC_MIXPANEL_TOKEN", "test-token");
       const mockGtag = vi.fn();
       (window as Window & { gtag: typeof mockGtag }).gtag = mockGtag;
+      await initAnalytics();
 
       trackEvent("logout");
 
@@ -71,7 +89,10 @@ describe("analytics 모듈", () => {
       });
     });
 
-    it("Mixpanel에 page_view를 전송한다", () => {
+    it("Mixpanel 초기화 후 page_view를 전송한다", async () => {
+      vi.stubEnv("NEXT_PUBLIC_MIXPANEL_TOKEN", "test-token");
+      await initAnalytics();
+
       trackPageView("/projects");
 
       expect(mockMixpanel.track).toHaveBeenCalledWith("page_view", {
@@ -81,27 +102,23 @@ describe("analytics 모듈", () => {
   });
 
   describe("initAnalytics", () => {
-    it("NEXT_PUBLIC_MIXPANEL_TOKEN이 있으면 mixpanel.init을 호출한다", () => {
+    it("NEXT_PUBLIC_MIXPANEL_TOKEN이 있으면 mixpanel.init을 호출한다", async () => {
       vi.stubEnv("NEXT_PUBLIC_MIXPANEL_TOKEN", "test-token-123");
 
-      initAnalytics();
+      await initAnalytics();
 
       expect(mockMixpanel.init).toHaveBeenCalledWith(
         "test-token-123",
         expect.objectContaining({ track_pageview: false })
       );
-
-      vi.unstubAllEnvs();
     });
 
-    it("NEXT_PUBLIC_MIXPANEL_TOKEN이 없으면 mixpanel.init을 호출하지 않는다", () => {
+    it("NEXT_PUBLIC_MIXPANEL_TOKEN이 없으면 mixpanel.init을 호출하지 않는다", async () => {
       vi.stubEnv("NEXT_PUBLIC_MIXPANEL_TOKEN", "");
 
-      initAnalytics();
+      await initAnalytics();
 
       expect(mockMixpanel.init).not.toHaveBeenCalled();
-
-      vi.unstubAllEnvs();
     });
   });
 });

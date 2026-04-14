@@ -14,9 +14,9 @@ const GA_ID = process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID;
 export default function AnalyticsProvider() {
   const pathname = usePathname();
 
-  // 앱 최초 마운트 시 Mixpanel 초기화
+  // 앱 최초 마운트 시 Mixpanel 초기화 (클라이언트 전용, 비동기)
   useEffect(() => {
-    initAnalytics();
+    initAnalytics().catch(() => {});
   }, []);
 
   // 경로 변경 시마다 페이지뷰 전송

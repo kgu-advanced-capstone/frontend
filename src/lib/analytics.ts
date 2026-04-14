@@ -1,4 +1,9 @@
-import mixpanel from "mixpanel-browser";
+/**
+ * GA4 + Mixpanel 통합 Event Tracker
+ *
+ * mixpanel-browser는 SSR에서 window.location에 접근하므로
+ * 최상위 import 대신 클라이언트 사이드에서만 동적 import한다.
+ */
 
 export type EventProperties = Record<
   string,
@@ -17,6 +22,10 @@ declare global {
   }
 }
 
+// mixpanel 인스턴스 캐시 (클라이언트에서만 설정됨)
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+let _mp: any = null;
+
 function trackGA(eventName: string, properties?: EventProperties): void {
   if (typeof window === "undefined") return;
   if (typeof window.gtag === "function") {
@@ -25,27 +34,31 @@ function trackGA(eventName: string, properties?: EventProperties): void {
 }
 
 function trackMixpanel(eventName: string, properties?: EventProperties): void {
+  if (!_mp) return;
   try {
-    mixpanel.track(eventName, properties);
+    _mp.track(eventName, properties);
   } catch {
-    // Mixpanel 미초기화 또는 사용 불가 상태
+    // Mixpanel 사용 불가 상태
   }
 }
 
 /**
  * GA4 + Mixpanel을 초기화한다.
- * AnalyticsProvider의 useEffect에서 한 번 호출한다.
+ * AnalyticsProvider의 useEffect에서 한 번 호출한다 (클라이언트 전용).
  */
-export function initAnalytics(): void {
+export async function initAnalytics(): Promise<void> {
   if (typeof window === "undefined") return;
 
   const token = process.env.NEXT_PUBLIC_MIXPANEL_TOKEN;
-  if (token) {
-    mixpanel.init(token, {
-      debug: process.env.NODE_ENV === "development",
-      track_pageview: false,
-    });
-  }
+  if (!token) return;
+
+  // SSR 에러를 피하기 위해 클라이언트에서만 동적 import
+  const { default: mixpanel } = await import("mixpanel-browser");
+  _mp = mixpanel;
+  mixpanel.init(token, {
+    debug: process.env.NODE_ENV === "development",
+    track_pageview: false,
+  });
 }
 
 /**
@@ -64,9 +77,13 @@ export function trackEvent(
  */
 export function trackPageView(path: string): void {
   trackGA("page_view", { page_path: path });
-  try {
-    mixpanel.track("page_view", { path });
-  } catch {
-    // Mixpanel 미초기화 또는 사용 불가 상태
-  }
+  trackMixpanel("page_view", { path });
+}
+
+/**
+ * 테스트에서 모듈 상태를 초기화한다.
+ * @internal
+ */
+export function _resetAnalyticsForTesting(): void {
+  _mp = null;
 }
