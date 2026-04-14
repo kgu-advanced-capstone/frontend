@@ -16,6 +16,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { useAuth } from "@/contexts/AuthContext";
 import * as notificationApi from "@/api/generated/notification/notification";
 import { cn, getProfileImageUrl } from "@/lib/utils";
+import { useTrack } from "@/hooks/useTrack";
 
 const navLinks = [
   { href: "/projects", label: "프로젝트 매칭" },
@@ -35,10 +36,12 @@ export default function Navbar() {
   const markAsRead = notificationApi.useMarkAsRead();
   const markAllAsRead = notificationApi.useMarkAllAsRead();
   const [mobileOpen, setMobileOpen] = useState(false);
+  const { track } = useTrack();
 
   const unreadCount = notifications.filter((n) => !n.read).length;
 
   const handleLogout = async () => {
+    track("logout_click");
     await logout();
     setMobileOpen(false);
   };
@@ -57,6 +60,7 @@ export default function Navbar() {
             <Link
               key={link.href}
               href={link.href}
+              onClick={() => track("nav_click", { label: link.label, href: link.href })}
               className={`text-sm font-medium transition-colors ${
                 pathname.startsWith(link.href)
                   ? "text-primary"
@@ -68,7 +72,7 @@ export default function Navbar() {
           ))}
 
           {/* 알림 */}
-          <Popover>
+          <Popover onOpenChange={(open) => open && track("notification_open", { unreadCount })}>
             <PopoverTrigger className="relative p-1">
               <Bell size={20} className="text-muted-foreground hover:text-foreground transition-colors" />
               {unreadCount > 0 && (
@@ -85,7 +89,7 @@ export default function Navbar() {
                     variant="ghost"
                     size="sm"
                     className="h-auto p-0 text-xs text-muted-foreground hover:text-foreground"
-                    onClick={() => markAllAsRead.mutate()}
+                    onClick={() => { track("notification_mark_all_read"); markAllAsRead.mutate(); }}
                   >
                     <CheckCheck size={14} className="mr-1" />
                     모두 읽음
@@ -106,7 +110,7 @@ export default function Navbar() {
                           "w-full px-4 py-3 text-left text-sm transition-colors hover:bg-muted/50",
                           !n.read && "bg-primary/5"
                         )}
-                        onClick={() => n.id && markAsRead.mutate({ id: n.id })}
+                        onClick={() => { track("notification_read", { notificationId: n.id }); n.id && markAsRead.mutate({ id: n.id }); }}
                       >
                         <p className={cn("leading-snug", !n.read && "font-medium")}>
                           {n.message}
@@ -171,7 +175,7 @@ export default function Navbar() {
             <Link
               key={link.href}
               href={link.href}
-              onClick={() => setMobileOpen(false)}
+              onClick={() => { track("nav_click", { label: link.label, href: link.href }); setMobileOpen(false); }}
               className={`block py-2 text-sm font-medium ${
                 pathname.startsWith(link.href)
                   ? "text-primary"

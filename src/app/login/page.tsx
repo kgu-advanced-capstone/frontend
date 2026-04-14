@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useAuth } from "@/contexts/AuthContext";
+import { useTrack } from "@/hooks/useTrack";
 
 export default function LoginPage() {
   const { login } = useAuth();
@@ -17,6 +18,7 @@ export default function LoginPage() {
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const { track } = useTrack();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -27,13 +29,16 @@ export default function LoginPage() {
       return;
     }
 
+    track("login_submit");
     setLoading(true);
     const result = await login(email, password);
     setLoading(false);
 
     if (result.success) {
+      track("login_success");
       router.push("/");
     } else {
+      track("login_error", { error: result.error });
       setError(result.error || "로그인에 실패했습니다.");
     }
   };
