@@ -81,7 +81,7 @@ export default function ProjectCard({ project, onJoin, joined }: ProjectCardProp
               size="sm"
               onClick={() => {
                 track("project_join_click", { projectId: project.id, title: project.title });
-                project.id && onJoin?.(project.id);
+                if (project.id) onJoin?.(project.id);
               }}
               disabled={isFull}
               variant={isFull ? "outline" : "default"}

@@ -1,7 +1,7 @@
 "use client";
 
 import Script from "next/script";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
 import { initAnalytics, trackPageView } from "@/lib/analytics";
 
@@ -13,16 +13,20 @@ const GA_ID = process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID;
  */
 export default function AnalyticsProvider() {
   const pathname = usePathname();
+  const [isAnalyticsReady, setIsAnalyticsReady] = useState(false);
 
   // 앱 최초 마운트 시 Mixpanel 초기화 (클라이언트 전용, 비동기)
   useEffect(() => {
-    initAnalytics().catch(() => {});
+    initAnalytics()
+      .then(() => setIsAnalyticsReady(true))
+      .catch(() => setIsAnalyticsReady(true));
   }, []);
 
-  // 경로 변경 시마다 페이지뷰 전송
+  // 초기화 완료 후, 경로 변경 시마다 페이지뷰 전송
   useEffect(() => {
+    if (!isAnalyticsReady) return;
     trackPageView(pathname);
-  }, [pathname]);
+  }, [pathname, isAnalyticsReady]);
 
   if (!GA_ID) return null;
 

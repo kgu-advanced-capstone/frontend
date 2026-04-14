@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { Search, CheckCircle, AlertTriangle } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -25,6 +25,7 @@ export default function ProjectsPage() {
   const [confirmProject, setConfirmProject] = useState<{ id: number; title: string } | null>(null);
   const [joinedProject, setJoinedProject] = useState<string | null>(null);
   const { track } = useTrack();
+  const searchTrackTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const { data, isLoading } = projectApi.useGetProjects({
     category: category === "전체" ? undefined : category,
@@ -92,9 +93,15 @@ export default function ProjectsPage() {
             placeholder="프로젝트 또는 기술 스택 검색..."
             value={search}
             onChange={(e) => {
-              setSearch(e.target.value);
+              const value = e.target.value;
+              setSearch(value);
               setPage(1);
-              if (e.target.value) track("project_search", { query: e.target.value });
+              if (searchTrackTimer.current) clearTimeout(searchTrackTimer.current);
+              if (value) {
+                searchTrackTimer.current = setTimeout(() => {
+                  track("project_search", { query_length: value.length });
+                }, 500);
+              }
             }}
             className="pl-10"
           />
