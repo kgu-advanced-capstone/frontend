@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import { Search, CheckCircle, AlertTriangle } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -16,6 +16,7 @@ import {
 import ProjectCard from "@/components/ProjectCard";
 import { categories } from "@/data/dummy";
 import * as projectApi from "@/api/generated/project/project";
+import { useTrack } from "@/hooks/useTrack";
 
 export default function ProjectsPage() {
   const [category, setCategory] = useState("전체");
@@ -23,6 +24,14 @@ export default function ProjectsPage() {
   const [page, setPage] = useState(1);
   const [confirmProject, setConfirmProject] = useState<{ id: number; title: string } | null>(null);
   const [joinedProject, setJoinedProject] = useState<string | null>(null);
+  const { track } = useTrack();
+  const searchTrackTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (searchTrackTimer.current) clearTimeout(searchTrackTimer.current);
+    };
+  }, []);
 
   const { data, isLoading } = projectApi.useGetProjects({
     category: category === "전체" ? undefined : category,
@@ -61,8 +70,10 @@ export default function ProjectsPage() {
 
   const handleConfirmJoin = () => {
     if (!confirmProject) return;
+    track("project_join_confirm", { projectId: confirmProject.id });
     applyMutation.mutate({ id: confirmProject.id }, {
       onSuccess: () => {
+        track("project_join_success", { projectId: confirmProject.id });
         setJoinedProject(confirmProject.title);
         setConfirmProject(null);
       },
@@ -88,8 +99,15 @@ export default function ProjectsPage() {
             placeholder="프로젝트 또는 기술 스택 검색..."
             value={search}
             onChange={(e) => {
-              setSearch(e.target.value);
+              const value = e.target.value;
+              setSearch(value);
               setPage(1);
+              if (searchTrackTimer.current) clearTimeout(searchTrackTimer.current);
+              if (value) {
+                searchTrackTimer.current = setTimeout(() => {
+                  track("project_search", { query_length: value.length });
+                }, 500);
+              }
             }}
             className="pl-10"
           />
@@ -102,6 +120,7 @@ export default function ProjectsPage() {
               variant={category === cat ? "default" : "secondary"}
               className="cursor-pointer text-sm px-3 py-1"
               onClick={() => {
+                track("project_category_filter", { category: cat });
                 setCategory(cat);
                 setPage(1);
               }}
@@ -149,7 +168,7 @@ export default function ProjectsPage() {
                 variant="outline"
                 size="sm"
                 disabled={page <= 1}
-                onClick={() => setPage((p) => p - 1)}
+                onClick={() => { track("project_pagination", { direction: "prev", page: page - 1 }); setPage((p) => p - 1); }}
               >
                 이전
               </Button>
@@ -160,7 +179,7 @@ export default function ProjectsPage() {
                 variant="outline"
                 size="sm"
                 disabled={page >= totalPages}
-                onClick={() => setPage((p) => p + 1)}
+                onClick={() => { track("project_pagination", { direction: "next", page: page + 1 }); setPage((p) => p + 1); }}
               >
                 다음
               </Button>

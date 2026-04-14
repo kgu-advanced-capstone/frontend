@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import type { ProjectSummaryResponse } from "@/api/types";
+import { useTrack } from "@/hooks/useTrack";
 
 interface ProjectCardProps {
   project: ProjectSummaryResponse;
@@ -17,6 +18,7 @@ interface ProjectCardProps {
 
 export default function ProjectCard({ project, onJoin, joined }: ProjectCardProps) {
   const isFull = (project.currentMembers ?? 0) >= (project.maxMembers ?? 0);
+  const { track } = useTrack();
 
   return (
     <Card className="flex flex-col transition-shadow hover:shadow-lg">
@@ -64,6 +66,7 @@ export default function ProjectCard({ project, onJoin, joined }: ProjectCardProp
         <div className="flex items-center gap-2">
           <Link
             href={`/projects/${project.id}`}
+            onClick={() => track("project_detail_click", { projectId: project.id, title: project.title })}
             className={cn(buttonVariants({ size: "sm", variant: "outline" }))}
           >
             <Eye size={14} className="mr-1" />
@@ -76,7 +79,10 @@ export default function ProjectCard({ project, onJoin, joined }: ProjectCardProp
           ) : (
             <Button
               size="sm"
-              onClick={() => project.id && onJoin?.(project.id)}
+              onClick={() => {
+                track("project_join_click", { projectId: project.id, title: project.title });
+                if (project.id) onJoin?.(project.id);
+              }}
               disabled={isFull}
               variant={isFull ? "outline" : "default"}
             >

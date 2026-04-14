@@ -4,6 +4,7 @@ import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import QueryProvider from "@/components/QueryProvider";
 import { AuthProvider } from "@/contexts/AuthContext";
+import AnalyticsProvider from "@/components/AnalyticsProvider";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -36,6 +37,7 @@ export default function RootLayout({
       >
         <QueryProvider>
           <AuthProvider>
+            <AnalyticsProvider />
             <Navbar />
             <main className="pt-16">{children}</main>
             <Footer />
