@@ -31,7 +31,7 @@ describe("analytics 모듈", () => {
   describe("trackEvent", () => {
     it("window.gtag가 있으면 GA4에 이벤트를 전송한다", () => {
       const mockGtag = vi.fn();
-      (window as Window & { gtag: typeof mockGtag }).gtag = mockGtag;
+      (window as unknown as Record<string, unknown>).gtag = mockGtag;
 
       trackEvent("button_click", { label: "참가하기" });
 
@@ -67,7 +67,7 @@ describe("analytics 모듈", () => {
     it("속성 없이 이벤트만 전송할 수 있다", async () => {
       vi.stubEnv("NEXT_PUBLIC_MIXPANEL_TOKEN", "test-token");
       const mockGtag = vi.fn();
-      (window as Window & { gtag: typeof mockGtag }).gtag = mockGtag;
+      (window as unknown as Record<string, unknown>).gtag = mockGtag;
       await initAnalytics();
 
       trackEvent("logout");
@@ -80,7 +80,7 @@ describe("analytics 모듈", () => {
   describe("trackPageView", () => {
     it("window.gtag가 있으면 GA4에 page_view를 전송한다", () => {
       const mockGtag = vi.fn();
-      (window as Window & { gtag: typeof mockGtag }).gtag = mockGtag;
+      (window as unknown as Record<string, unknown>).gtag = mockGtag;
 
       trackPageView("/projects");
 
