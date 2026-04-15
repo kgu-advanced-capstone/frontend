@@ -43,7 +43,8 @@ export default function RegisterPage() {
     }
 
     setLoading(true);
-    const result = await register(name, email, password, phone || undefined);
+    const sanitizedPhone = phone?.trim() || undefined;
+    const result = await register(name, email, password, sanitizedPhone);
     setLoading(false);
 
     if (result.success) {

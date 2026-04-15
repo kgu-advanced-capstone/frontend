@@ -157,10 +157,10 @@ export default function ProjectDetailPage({
                         )}
                         <div>
                           <p className="text-sm font-medium">{p.name}</p>
-                          {p.email && (
+                          {joined && p.email && (
                             <p className="text-xs text-muted-foreground">{p.email}</p>
                           )}
-                          {p.phone && (
+                          {joined && p.phone && (
                             <p className="text-xs text-muted-foreground">{p.phone}</p>
                           )}
                           {p.joinedAt && (
