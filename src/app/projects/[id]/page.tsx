@@ -157,6 +157,12 @@ export default function ProjectDetailPage({
                         )}
                         <div>
                           <p className="text-sm font-medium">{p.name}</p>
+                          {p.email && (
+                            <p className="text-xs text-muted-foreground">{p.email}</p>
+                          )}
+                          {p.phone && (
+                            <p className="text-xs text-muted-foreground">{p.phone}</p>
+                          )}
                           {p.joinedAt && (
                             <p className="text-xs text-muted-foreground">{p.joinedAt} 참여</p>
                           )}

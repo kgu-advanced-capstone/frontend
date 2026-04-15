@@ -10,7 +10,7 @@ interface AuthContextType {
   user: UserResponse | null;
   isLoading: boolean;
   login: (email: string, password: string) => Promise<{ success: boolean; error?: string }>;
-  register: (name: string, email: string, password: string) => Promise<{ success: boolean; error?: string }>;
+  register: (name: string, email: string, password: string, phone?: string) => Promise<{ success: boolean; error?: string }>;
   logout: () => Promise<void>;
 }
 
@@ -50,9 +50,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  const register = async (name: string, email: string, password: string) => {
+  const register = async (name: string, email: string, password: string, phone?: string) => {
     try {
-      await registerMutation.mutateAsync({ data: { name, email, password } });
+      await registerMutation.mutateAsync({ data: { name, email, password, phone } });
       await refetch();
       return { success: true };
     } catch (err) {

@@ -11,6 +11,10 @@ export interface ParticipantResponse {
   userId?: number;
   /** 이름 */
   name?: string;
+  /** 이메일 */
+  email?: string;
+  /** 전화번호 */
+  phone?: string;
   /** 프로필 이미지 URL */
   profileImage?: string;
   /** GitHub URL */

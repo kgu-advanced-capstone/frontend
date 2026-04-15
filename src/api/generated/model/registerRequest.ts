@@ -21,4 +21,6 @@ export interface RegisterRequest {
      * @maxLength 50
      */
   name: string;
+  /** 전화번호 */
+  phone?: string;
 }

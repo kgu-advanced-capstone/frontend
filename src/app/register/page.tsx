@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { Mail, Lock, User, AlertCircle } from "lucide-react";
+import { Mail, Lock, User, Phone, AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -16,6 +16,7 @@ export default function RegisterPage() {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [phone, setPhone] = useState("");
   const [passwordConfirm, setPasswordConfirm] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
@@ -42,7 +43,7 @@ export default function RegisterPage() {
     }
 
     setLoading(true);
-    const result = await register(name, email, password);
+    const result = await register(name, email, password, phone || undefined);
     setLoading(false);
 
     if (result.success) {
@@ -92,6 +93,21 @@ export default function RegisterPage() {
                   placeholder="email@example.com"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
+                  className="pl-10"
+                />
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="phone">전화번호 <span className="text-muted-foreground">(선택)</span></Label>
+              <div className="relative">
+                <Phone size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+                <Input
+                  id="phone"
+                  type="tel"
+                  placeholder="010-1234-5678"
+                  value={phone}
+                  onChange={(e) => setPhone(e.target.value)}
                   className="pl-10"
                 />
               </div>
