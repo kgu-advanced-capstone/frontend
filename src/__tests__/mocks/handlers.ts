@@ -15,7 +15,7 @@ import type {
   UserResponse,
 } from "@/api/types";
 
-const BASE = "https://pcserver.cloud/api";
+const BASE = "/api";
 
 // ─── In-memory DB ───
 let users: UserResponse[] = [];

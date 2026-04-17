@@ -47,7 +47,7 @@ export const customInstance = <T>(url: string, config: any): Promise<T> => {
     const controller = new AbortController();
     const formData = normalizeFormData(body);
 
-    const promise = fetch(`https://pcserver.cloud${url}`, {
+    const promise = fetch(url, {
       method: (rest.method as string) || 'GET',
       body: formData,
       credentials: 'include',
