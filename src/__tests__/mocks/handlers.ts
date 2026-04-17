@@ -43,6 +43,28 @@ let nextExpId = 1;
 let notifications: NotificationResponse[] = [];
 let nextNotifId = 1;
 
+type EducationRecord = {
+  id: number;
+  schoolName: string;
+  major?: string | null;
+  degree?: string | null;
+  startDate: string;
+  endDate?: string | null;
+};
+
+type CertificationRecord = {
+  id: number;
+  name: string;
+  issuingOrganization?: string | null;
+  issuedDate: string;
+};
+
+let educations: EducationRecord[] = [];
+let nextEducationId = 1;
+
+let certifications: CertificationRecord[] = [];
+let nextCertificationId = 1;
+
 // ─── Helper ───
 function addNotification(message: string) {
   notifications.unshift({
@@ -75,6 +97,10 @@ export function resetDb() {
   nextExpId = 1;
   notifications = [];
   nextNotifId = 1;
+  educations = [];
+  nextEducationId = 1;
+  certifications = [];
+  nextCertificationId = 1;
 }
 
 export const handlers = [
@@ -183,6 +209,100 @@ export const handlers = [
       console.error("[MSW PATCH /profile error]", e);
       return HttpResponse.json({ message: "Bad Request" }, { status: 400 });
     }
+  }),
+
+  // ─── Educations ───
+
+  // GET /educations
+  http.get(`${BASE}/educations`, () => {
+    return HttpResponse.json(educations);
+  }),
+
+  // POST /educations
+  http.post(`${BASE}/educations`, async ({ request }) => {
+    const body = (await request.json()) as Omit<EducationRecord, "id">;
+    const education: EducationRecord = {
+      id: nextEducationId++,
+      schoolName: body.schoolName,
+      major: body.major ?? null,
+      degree: body.degree ?? null,
+      startDate: body.startDate,
+      endDate: body.endDate ?? null,
+    };
+    educations.unshift(education);
+    return HttpResponse.json(education, { status: 201 });
+  }),
+
+  // PUT /educations/:id
+  http.put(`${BASE}/educations/:id`, async ({ params, request }) => {
+    const id = Number(params.id);
+    const idx = educations.findIndex((e) => e.id === id);
+    if (idx === -1) {
+      return HttpResponse.json({ message: "Not Found" }, { status: 404 });
+    }
+
+    const body = (await request.json()) as Omit<EducationRecord, "id">;
+    educations[idx] = {
+      ...educations[idx],
+      schoolName: body.schoolName,
+      major: body.major ?? null,
+      degree: body.degree ?? null,
+      startDate: body.startDate,
+      endDate: body.endDate ?? null,
+    };
+    return HttpResponse.json(educations[idx]);
+  }),
+
+  // DELETE /educations/:id
+  http.delete(`${BASE}/educations/:id`, ({ params }) => {
+    const id = Number(params.id);
+    educations = educations.filter((e) => e.id !== id);
+    return HttpResponse.json(null, { status: 204 });
+  }),
+
+  // ─── Certifications ───
+
+  // GET /certifications
+  http.get(`${BASE}/certifications`, () => {
+    return HttpResponse.json(certifications);
+  }),
+
+  // POST /certifications
+  http.post(`${BASE}/certifications`, async ({ request }) => {
+    const body = (await request.json()) as Omit<CertificationRecord, "id">;
+    const certification: CertificationRecord = {
+      id: nextCertificationId++,
+      name: body.name,
+      issuingOrganization: body.issuingOrganization ?? null,
+      issuedDate: body.issuedDate,
+    };
+    certifications.unshift(certification);
+    return HttpResponse.json(certification, { status: 201 });
+  }),
+
+  // PUT /certifications/:id
+  http.put(`${BASE}/certifications/:id`, async ({ params, request }) => {
+    const id = Number(params.id);
+    const idx = certifications.findIndex((c) => c.id === id);
+    if (idx === -1) {
+      return HttpResponse.json({ message: "Not Found" }, { status: 404 });
+    }
+
+    const body = (await request.json()) as Omit<CertificationRecord, "id">;
+    certifications[idx] = {
+      ...certifications[idx],
+      name: body.name,
+      issuingOrganization: body.issuingOrganization ?? null,
+      issuedDate: body.issuedDate,
+    };
+    return HttpResponse.json(certifications[idx]);
+  }),
+
+  // DELETE /certifications/:id
+  http.delete(`${BASE}/certifications/:id`, ({ params }) => {
+    const id = Number(params.id);
+    certifications = certifications.filter((c) => c.id !== id);
+    return HttpResponse.json(null, { status: 204 });
   }),
 
   // ─── Projects ───
@@ -405,6 +525,7 @@ export const handlers = [
         return {
           projectId: e.projectId,
           projectTitle: project?.title || "프로젝트",
+          skills: project?.skills || [],
           keyPoints: [e.aiSummary!],
         };
       });

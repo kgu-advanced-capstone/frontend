@@ -25,6 +25,8 @@ import * as authApi from "@/api/generated/auth/auth";
 import * as profileApi from "@/api/generated/profile/profile";
 import type { ProfileResponse } from "@/api/generated/model";
 import { getProfileImageUrl } from "@/lib/utils";
+import { EducationSection } from "./components/EducationSection";
+import { CertificationSection } from "./components/CertificationSection";
 
 interface FormState {
   name: string;
@@ -152,6 +154,7 @@ function ProfileForm({ profile, userName }: { profile: ProfileResponse; userName
     });
   };
 
+
   const profileImageUrl = getProfileImageUrl(form.profileImage);
 
   return (
@@ -163,6 +166,7 @@ function ProfileForm({ profile, userName }: { profile: ProfileResponse; userName
           <p className="text-sm">프로필 저장에 실패했습니다. 잠시 후 다시 시도해주세요.</p>
         </div>
       )}
+
 
       {/* 프로필 이미지 */}
       <Card>
@@ -181,9 +185,9 @@ function ProfileForm({ profile, userName }: { profile: ProfileResponse; userName
           <div className="flex-1 space-y-2">
             <Label className="block text-sm">프로필 사진 업로드</Label>
             <div className="flex items-center gap-2">
-              <Button 
-                type="button" 
-                variant="outline" 
+              <Button
+                type="button"
+                variant="outline"
                 size="sm"
                 onClick={() => fileInputRef.current?.click()}
               >
@@ -280,6 +284,11 @@ function ProfileForm({ profile, userName }: { profile: ProfileResponse; userName
         </CardContent>
       </Card>
 
+      <div className="grid gap-6 lg:grid-cols-2">
+        <EducationSection />
+        <CertificationSection />
+      </div>
+
       {/* 링크 */}
       <Card>
         <CardHeader>
@@ -364,7 +373,7 @@ function ProfileForm({ profile, userName }: { profile: ProfileResponse; userName
 }
 
 export default function ProfilePage() {
-  const { user } = useAuth();
+  const { user, isLoading: authLoading } = useAuth();
   const router = useRouter();
   const { data: profile, isLoading, error: profileError } = profileApi.useGetProfile({
     query: {
@@ -375,6 +384,14 @@ export default function ProfilePage() {
   useEffect(() => {
     if (!user) router.push("/login");
   }, [user, router]);
+
+  if (authLoading) {
+    return (
+      <div className="flex min-h-[60vh] items-center justify-center">
+        <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary/20 border-t-primary" />
+      </div>
+    );
+  }
 
   if (!user) return null;
 

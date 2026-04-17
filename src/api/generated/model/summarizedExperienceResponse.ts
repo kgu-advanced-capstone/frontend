@@ -11,5 +11,6 @@ export interface SummarizedExperienceResponse {
   projectId?: number;
   /** 프로젝트 제목 */
   projectTitle?: string;
+  skills?: unknown[];
   keyPoints?: unknown[];
 }

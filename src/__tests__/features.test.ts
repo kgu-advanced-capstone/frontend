@@ -512,7 +512,7 @@ describe("이력서 생성 & 조회", () => {
 
     // 프로젝트 생성 + 경험 작성 + AI 요약
     const { result: create } = renderHookWithClient(() => projectApi.useCreateProject());
-    create.current.mutate({ data: { title: "이력서용 프로젝트", category: "웹" } });
+    create.current.mutate({ data: { title: "이력서용 프로젝트", category: "웹", skills: ["React", "Spring Boot"] } });
     await waitFor(() => expect(create.current.isSuccess).toBe(true));
     const projectId = (create.current.data as any).data.id;
 
@@ -544,6 +544,9 @@ describe("이력서 생성 & 조회", () => {
     expect(
       (resume.current.data as any).data.summarizedExperiences[0].projectTitle
     ).toBe("이력서용 프로젝트");
+    expect(
+      (resume.current.data as any).data.summarizedExperiences[0].skills
+    ).toEqual(["React", "Spring Boot"]);
     expect((resume.current.data as any).data.generatedAt).toBeTruthy();
   });
 });
