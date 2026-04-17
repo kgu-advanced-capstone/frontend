@@ -5,7 +5,7 @@ const nextConfig: NextConfig = {
     return [
       {
         source: "/api/:path*",
-        destination: "http://pcserver.cloud/api/:path*",
+        destination: "https://pcserver.cloud/api/:path*",
       },
     ];
   },
