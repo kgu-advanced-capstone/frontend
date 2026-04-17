@@ -158,7 +158,6 @@ export default function ResumePage() {
     ul { list-style: none; padding-top: 4px; }
     li { font-size: 13px; color: #374151; padding-left: 14px; position: relative; margin-bottom: 2px; }
     li::before { content: "•"; position: absolute; left: 0; color: #9ca3af; }
-    .footer { font-size: 11px; color: #9ca3af; text-align: center; margin-top: 40px; }
     @media print { body { padding: 20px; } }
   </style>
 </head>
@@ -179,8 +178,6 @@ export default function ResumePage() {
 
   <p class="section-title">Project Experience</p>
   ${experiencesHtml}
-
-  <p class="footer">본 이력서는 AI에 의해 생성되었습니다.</p>
 </body>
 </html>`;
 
@@ -507,12 +504,6 @@ export default function ResumePage() {
                     })}
                   </div>
                 </div>
-
-                {resume.generatedAt && (
-                  <p className="text-[10px] text-center text-muted-foreground pt-4">
-                    본 이력서는 AI에 의해 생성되었습니다. (최종 생성: {new Date(resume.generatedAt).toLocaleString()})
-                  </p>
-                )}
               </CardContent>
             </Card>
           </div>
