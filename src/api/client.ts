@@ -1,8 +1,8 @@
 import axios from "axios";
 
 const client = axios.create({
-  baseURL: "", // OpenAPI 경로가 이미 /api를 포함하고 있음 (next.config.ts rewrites와 조화)
-  headers: { 
+  baseURL: "https://pcserver.cloud",
+  headers: {
     "Accept": "application/json"
   },
   withCredentials: true, // 쿠키 기반 인증을 위해 필수
