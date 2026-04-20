@@ -86,7 +86,12 @@ export const customInstance = <T>(url: string, config: any): Promise<T> => {
     ...rest,
     url,
     data: finalData,
-    headers: { ...headers },
+    headers: {
+      ...(['POST', 'PUT', 'PATCH'].includes((rest.method as string)?.toUpperCase()) && !finalData
+        ? { 'Content-Type': 'application/json' }
+        : {}),
+      ...headers,
+    },
     cancelToken: source.token,
   };
 
