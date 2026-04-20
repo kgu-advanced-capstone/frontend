@@ -82,16 +82,16 @@ export const customInstance = <T>(url: string, config: any): Promise<T> => {
 
   const finalData = body && typeof body === 'string' ? JSON.parse(body) : body;
 
+  // body 없는 POST/PUT/PATCH는 Axios가 Content-Type을 생략하므로 빈 객체로 강제
+  const isBodylessStateChange =
+    ['POST', 'PUT', 'PATCH'].includes((rest.method as string)?.toUpperCase()) &&
+    finalData === undefined;
+
   const axiosConfig: AxiosRequestConfig = {
     ...rest,
     url,
-    data: finalData,
-    headers: {
-      ...(['POST', 'PUT', 'PATCH'].includes((rest.method as string)?.toUpperCase()) && !finalData
-        ? { 'Content-Type': 'application/json' }
-        : {}),
-      ...headers,
-    },
+    data: isBodylessStateChange ? {} : finalData,
+    headers: { ...headers },
     cancelToken: source.token,
   };
 
