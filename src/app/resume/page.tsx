@@ -1,22 +1,53 @@
 "use client";
 
 import Link from "next/link";
-import { useCallback } from "react";
-import { FileText, ArrowRight, FolderOpen, Download, Loader2, Sparkles, RefreshCw } from "lucide-react";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { FileText, ArrowRight, FolderOpen, Download, Loader2, Sparkles, RefreshCw, Save, RotateCcw } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { buttonVariants } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
 import * as resumeApi from "@/api/generated/resume/resume";
 import * as projectApi from "@/api/generated/project/project";
 import { useEducations } from "@/api/educations";
 import { useCertifications } from "@/api/certifications";
+import {
+  COVER_LETTER_STORAGE_KEY,
+  DEFAULT_COVER_LETTER_DRAFT,
+  type CoverLetterDraft,
+  coverLetterToHtml,
+  hasCoverLetterContent,
+  normalizeCoverLetterDraft,
+} from "./cover-letter";
 
 export default function ResumePage() {
   const queryClient = useQueryClient();
+  const [coverLetterDraft, setCoverLetterDraft] = useState<CoverLetterDraft>(DEFAULT_COVER_LETTER_DRAFT);
+  const [isCoverLetterLoaded, setIsCoverLetterLoaded] = useState(false);
+
+  useEffect(() => {
+    try {
+      const storedDraft = window.localStorage.getItem(COVER_LETTER_STORAGE_KEY);
+      if (storedDraft) {
+        setCoverLetterDraft(normalizeCoverLetterDraft(JSON.parse(storedDraft) as Partial<CoverLetterDraft>));
+      }
+    } catch {
+      setCoverLetterDraft(DEFAULT_COVER_LETTER_DRAFT);
+    } finally {
+      setIsCoverLetterLoaded(true);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!isCoverLetterLoaded) return;
+    window.localStorage.setItem(COVER_LETTER_STORAGE_KEY, JSON.stringify(coverLetterDraft));
+  }, [coverLetterDraft, isCoverLetterLoaded]);
 
   // 내 프로젝트 목록 (요약 대상 확인용)
   const { data: myProjects = [] } = projectApi.useGetMyProjects({
@@ -48,6 +79,32 @@ export default function ResumePage() {
 
   const handleGenerate = () => {
     generateMutation.mutate();
+  };
+
+  const normalizedCoverLetterDraft = useMemo(
+    () => normalizeCoverLetterDraft(coverLetterDraft),
+    [coverLetterDraft]
+  );
+  const hasCoverLetter = hasCoverLetterContent(coverLetterDraft);
+
+  const persistCoverLetterDraft = (draft: CoverLetterDraft) => {
+    if (typeof window === "undefined") return;
+    window.localStorage.setItem(COVER_LETTER_STORAGE_KEY, JSON.stringify(draft));
+  };
+
+  const updateCoverLetterField = (field: keyof CoverLetterDraft, value: string) => {
+    setCoverLetterDraft((prev) => {
+      const nextDraft = { ...prev, [field]: value };
+      if (isCoverLetterLoaded) {
+        persistCoverLetterDraft(nextDraft);
+      }
+      return nextDraft;
+    });
+  };
+
+  const handleResetCoverLetter = () => {
+    setCoverLetterDraft(DEFAULT_COVER_LETTER_DRAFT);
+    persistCoverLetterDraft(DEFAULT_COVER_LETTER_DRAFT);
   };
 
   const handleDownloadPDF = useCallback(() => {
@@ -133,6 +190,7 @@ export default function ResumePage() {
         </div>`;
       })
       .join("");
+    const coverLetterHtml = coverLetterToHtml(normalizedCoverLetterDraft);
 
     // 5. HTML 템플릿 내 바인딩
     const html = `<!DOCTYPE html>
@@ -150,6 +208,7 @@ export default function ResumePage() {
     .links { font-size: 13px; }
     .links a { color: #4b5563; text-decoration: none; border-bottom: 1px solid #d1d5db; }
     .section-title { font-size: 16px; font-weight: 700; color: #111; border-bottom: 2px solid #111; padding-bottom: 4px; margin-bottom: 16px; margin-top: 30px; text-transform: uppercase; }
+    .cover-letter p { font-size: 13px; color: #374151; margin-bottom: 10px; line-height: 1.8; }
     .experience { margin-bottom: 20px; }
     .exp-header { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 4px; }
     .exp-title { font-weight: 700; font-size: 15px; }
@@ -170,6 +229,8 @@ export default function ResumePage() {
     ${blogHtml}
   </div>
 
+  ${coverLetterHtml}
+
   <p class="section-title">Education</p>
   ${educationsHtml || `<p class="exp-stack">등록된 학력이 없습니다.</p>`}
 
@@ -189,25 +250,10 @@ export default function ResumePage() {
       printWindow.focus();
       printWindow.print();
     }, 500);
-  }, [certifications, educations, myProjects, resume]);
+  }, [certifications, educations, myProjects, normalizedCoverLetterDraft, resume]);
 
   const isNotFound = status === "error" || !resume;
   const hasResumeData = resume && resume.summarizedExperiences && resume.summarizedExperiences.length > 0;
-  const resumeSkills = Array.from(
-    new Set(
-      (resume?.summarizedExperiences ?? [])
-        .flatMap((exp) => {
-          const summarizedSkills = (exp.skills ?? []).map((skill) => String(skill)).filter(Boolean);
-          if (summarizedSkills.length > 0) return summarizedSkills;
-          const projectSkills = myProjects
-            .find((mp) => mp.project?.id === exp.projectId)
-            ?.project?.skills;
-          return (projectSkills ?? []).map((skill) => String(skill)).filter(Boolean);
-        })
-        .map((skill) => String(skill))
-        .filter(Boolean)
-    )
-  );
 
   if (isLoading) {
     return (
@@ -216,6 +262,64 @@ export default function ResumePage() {
       </div>
     );
   }
+
+  const coverLetterEditorCard = (
+    <Card>
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2">
+          <FileText size={18} className="text-primary" />
+          자기소개서
+        </CardTitle>
+        <CardDescription>
+          작성한 내용은 이 브라우저의 localStorage에 자동 저장됩니다.
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        <div className="space-y-2">
+          <Label htmlFor="cover-letter-title">섹션 제목</Label>
+          <Input
+            id="cover-letter-title"
+            value={coverLetterDraft.title}
+            onChange={(e) => updateCoverLetterField("title", e.target.value)}
+            placeholder={DEFAULT_COVER_LETTER_DRAFT.title}
+            maxLength={40}
+          />
+        </div>
+        <div className="space-y-2">
+          <div className="flex items-center justify-between gap-3">
+            <Label htmlFor="cover-letter-content">본문</Label>
+            <span className="text-xs text-muted-foreground">
+              {coverLetterDraft.content.trim().length.toLocaleString("ko-KR")}자
+            </span>
+          </div>
+          <Textarea
+            id="cover-letter-content"
+            value={coverLetterDraft.content}
+            onChange={(e) => updateCoverLetterField("content", e.target.value)}
+            placeholder={"지원 동기, 협업 경험, 강점과 성장 방향을 자유롭게 작성하세요.\n\n문단을 나누면 PDF에도 문단 간격이 반영됩니다."}
+            className="min-h-[260px] resize-y leading-7"
+            maxLength={3000}
+          />
+        </div>
+        <div className="flex items-center justify-between gap-3">
+          <div className="flex items-center gap-2 text-xs text-muted-foreground">
+            <Save size={14} />
+            {isCoverLetterLoaded ? "자동 저장됨" : "불러오는 중"}
+          </div>
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={handleResetCoverLetter}
+            disabled={!hasCoverLetter && coverLetterDraft.title === DEFAULT_COVER_LETTER_DRAFT.title}
+          >
+            <RotateCcw size={14} className="mr-1" />
+            초기화
+          </Button>
+        </div>
+      </CardContent>
+    </Card>
+  );
 
   return (
     <div className="mx-auto max-w-5xl px-6 py-12">
@@ -271,28 +375,31 @@ export default function ResumePage() {
       </div>
 
       {isNotFound || !hasResumeData ? (
-        <Card className="border-dashed">
-          <CardContent className="flex flex-col items-center justify-center py-20 text-center">
-            <div className="mb-4 flex h-20 w-20 items-center justify-center rounded-full bg-muted/50">
-              <FolderOpen size={40} className="text-muted-foreground/30" />
-            </div>
-            <p className="text-xl font-semibold text-muted-foreground">
-              보여줄 이력서 내용이 없습니다
-            </p>
-            <p className="mt-2 max-w-sm text-sm text-muted-foreground">
-              내 프로젝트 관리에서 프로젝트 경험을 기록하고 AI 요약을 진행하면, 그 내용을 바탕으로 이력서가 구성됩니다.
-            </p>
-            <div className="mt-8 flex gap-3">
-              <Link
-                href="/my-projects"
-                className={cn(buttonVariants({ variant: "outline" }))}
-              >
-                프로젝트 관리로 이동
-                <ArrowRight size={16} className="ml-2" />
-              </Link>
-            </div>
-          </CardContent>
-        </Card>
+        <div className="grid gap-8 lg:grid-cols-2">
+          <div>{coverLetterEditorCard}</div>
+          <Card className="border-dashed">
+            <CardContent className="flex flex-col items-center justify-center py-20 text-center">
+              <div className="mb-4 flex h-20 w-20 items-center justify-center rounded-full bg-muted/50">
+                <FolderOpen size={40} className="text-muted-foreground/30" />
+              </div>
+              <p className="text-xl font-semibold text-muted-foreground">
+                보여줄 이력서 내용이 없습니다
+              </p>
+              <p className="mt-2 max-w-sm text-sm text-muted-foreground">
+                자기소개서는 먼저 작성할 수 있고, 이력서 생성 후 PDF 미리보기와 다운로드에 함께 반영됩니다.
+              </p>
+              <div className="mt-8 flex gap-3">
+                <Link
+                  href="/my-projects"
+                  className={cn(buttonVariants({ variant: "outline" }))}
+                >
+                  프로젝트 관리로 이동
+                  <ArrowRight size={16} className="ml-2" />
+                </Link>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
       ) : (
         <div className="grid gap-8 lg:grid-cols-2">
           {/* 포함된 프로젝트 목록 */}
@@ -327,6 +434,8 @@ export default function ResumePage() {
                 </div>
               </CardContent>
             </Card>
+
+            {coverLetterEditorCard}
 
             <Card>
               <CardHeader>
@@ -412,6 +521,33 @@ export default function ResumePage() {
                       </a>
                     )}
                   </div>
+                </div>
+
+                <Separator />
+
+                {/* 자기소개서 섹션 */}
+                <div className="space-y-6">
+                  <h3 className="text-lg font-bold border-l-4 border-primary pl-3">
+                    {normalizedCoverLetterDraft.title}
+                  </h3>
+                  {hasCoverLetter ? (
+                    <div className="space-y-4 text-sm leading-7 text-muted-foreground">
+                      {normalizedCoverLetterDraft.content.split(/\n{2,}/).map((paragraph, paragraphIndex) => (
+                        <p key={paragraphIndex}>
+                          {paragraph.split("\n").map((line, lineIndex) => (
+                            <span key={`${paragraphIndex}-${lineIndex}`}>
+                              {line}
+                              {lineIndex < paragraph.split("\n").length - 1 && <br />}
+                            </span>
+                          ))}
+                        </p>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="text-sm text-muted-foreground">
+                      좌측에서 자기소개서를 작성하면 PDF 미리보기와 다운로드에 함께 반영됩니다.
+                    </p>
+                  )}
                 </div>
 
                 <Separator />
