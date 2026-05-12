@@ -6,6 +6,7 @@ import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { buttonVariants } from "@/components/ui/button";
+import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
 import type { ProjectSummaryResponse } from "@/api/types";
 
@@ -90,6 +91,50 @@ export default function ProjectCard({ project, onJoin, joined }: ProjectCardProp
         <p className="text-xs text-muted-foreground">
           {project.author} · {project.createdAt}
         </p>
+      </div>
+    </Card>
+  );
+}
+
+export function ProjectCardSkeleton() {
+  return (
+    <Card
+      data-testid="project-card-skeleton"
+      className="min-h-[236px]"
+      aria-hidden="true"
+    >
+      <CardHeader className="pb-3">
+        <div className="flex items-center justify-between">
+          <Skeleton className="h-5 w-16 rounded-4xl" />
+          <Skeleton className="h-5 w-14 rounded-4xl" />
+        </div>
+        <div className="mt-2 space-y-2">
+          <Skeleton className="h-5 w-4/5" />
+          <Skeleton className="h-5 w-2/5" />
+        </div>
+      </CardHeader>
+
+      <CardContent className="flex-1 pb-3">
+        <div className="mt-4 flex flex-wrap gap-1.5">
+          <Skeleton className="h-5 w-14 rounded-4xl" />
+          <Skeleton className="h-5 w-16 rounded-4xl" />
+          <Skeleton className="h-5 w-12 rounded-4xl" />
+        </div>
+      </CardContent>
+
+      <CardFooter className="flex items-center justify-between border-t pt-4">
+        <div className="flex items-center gap-4">
+          <Skeleton className="h-4 w-12" />
+          <Skeleton className="h-4 w-20" />
+        </div>
+        <div className="flex items-center gap-2">
+          <Skeleton className="h-8 w-16 rounded-lg" />
+          <Skeleton className="h-8 w-14 rounded-lg" />
+        </div>
+      </CardFooter>
+
+      <div className="px-6 pb-4">
+        <Skeleton className="h-4 w-32" />
       </div>
     </Card>
   );
