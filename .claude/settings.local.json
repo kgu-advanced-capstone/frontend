@@ -14,7 +14,8 @@
       "Bash(npm install:*)",
       "Bash(pnpm exec:*)",
       "Bash(find /Users/jinhy/workspace/frontend -maxdepth 2 -type f \\\\\\(-name vitest.config.* -o -name jest.config.* -o -name vitest.setup.* -o -name jest.setup.* \\\\\\))",
-      "Bash(pnpm test:*)"
+      "Bash(pnpm test:*)",
+      "Bash(npx tsc *)"
     ]
   }
 }

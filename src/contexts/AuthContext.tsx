@@ -35,8 +35,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const login = async (email: string, password: string) => {
     try {
-      await loginMutation.mutateAsync({ data: { email, password } });
-      // 로그인 성공 시 세션 쿠키가 생성되므로, me 정보를 다시 가져옴
+      const res = await loginMutation.mutateAsync({ data: { email, password } });
+      const token = (res.data as unknown as { accessToken: string })?.accessToken;
+      if (token) {
+        localStorage.setItem('accessToken', token);
+      }
       await refetch();
       return { success: true };
     } catch (err) {
@@ -73,6 +76,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       console.error("Logout request failed:", error);
     } finally {
       // 서버 요청 성공 여부와 관계없이 클라이언트 상태는 초기화
+      localStorage.removeItem('accessToken');
       qc.setQueryData(auth.getMeQueryKey(), null);
       qc.clear(); // 모든 쿼리 캐시 삭제 (중요: 다른 유저의 데이터가 남지 않도록)
       router.push("/");
