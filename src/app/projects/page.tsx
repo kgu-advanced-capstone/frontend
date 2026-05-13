@@ -13,10 +13,13 @@ import {
   DialogDescription,
   DialogFooter,
 } from "@/components/ui/dialog";
-import ProjectCard from "@/components/ProjectCard";
+import ProjectCard, { ProjectCardSkeleton } from "@/components/ProjectCard";
+import { Skeleton } from "@/components/ui/skeleton";
 import { categories } from "@/data/dummy";
 import * as projectApi from "@/api/generated/project/project";
 import { useTrack } from "@/hooks/useTrack";
+
+const projectSkeletonItems = Array.from({ length: 6 }, (_, index) => index);
 
 export default function ProjectsPage() {
   const [category, setCategory] = useState("전체");
@@ -131,15 +134,25 @@ export default function ProjectsPage() {
         </div>
       </div>
 
-      <p className="mb-6 text-sm text-muted-foreground">
-        총{" "}
-        <span className="font-semibold text-primary">{totalCount}</span>
-        개의 프로젝트
-      </p>
+      {isLoading ? (
+        <Skeleton className="mb-6 h-5 w-32" aria-hidden="true" />
+      ) : (
+        <p className="mb-6 text-sm text-muted-foreground">
+          총{" "}
+          <span className="font-semibold text-primary">{totalCount}</span>
+          개의 프로젝트
+        </p>
+      )}
 
       {isLoading ? (
-        <div className="flex justify-center py-20">
-          <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary/20 border-t-primary" />
+        <div
+          className="grid gap-6 md:grid-cols-2 lg:grid-cols-3"
+          role="status"
+          aria-label="프로젝트 목록 불러오는 중"
+        >
+          {projectSkeletonItems.map((item) => (
+            <ProjectCardSkeleton key={item} />
+          ))}
         </div>
       ) : projects.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-20 text-muted-foreground">
