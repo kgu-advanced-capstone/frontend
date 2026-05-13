@@ -46,6 +46,7 @@ export const customInstance = <T>(url: string, config: any): Promise<T> => {
   if (body instanceof FormData) {
     const controller = new AbortController();
     const formData = normalizeFormData(body);
+    const token = typeof window !== 'undefined' ? localStorage.getItem('accessToken') : null;
 
     const promise = fetch(url, {
       method: (rest.method as string) || 'GET',
@@ -53,6 +54,7 @@ export const customInstance = <T>(url: string, config: any): Promise<T> => {
       credentials: 'include',
       headers: {
         Accept: 'application/json',
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
         // Content-Type 미설정 → fetch가 multipart/form-data; boundary=... 자동 설정
         ...Object.fromEntries(
           Object.entries(headers || {}).filter(
