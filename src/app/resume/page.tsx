@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
+import { Skeleton } from "@/components/ui/skeleton";
 import { buttonVariants } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -25,6 +26,106 @@ import {
   hasCoverLetterContent,
   normalizeCoverLetterDraft,
 } from "./cover-letter";
+
+function ResumePageSkeleton() {
+  return (
+    <div
+      className="mx-auto max-w-5xl px-6 py-12"
+      role="status"
+      aria-label="이력서 불러오는 중"
+    >
+      <div className="mb-8 flex items-center gap-3">
+        <Skeleton className="h-10 w-10 rounded-lg" />
+        <div className="space-y-2">
+          <Skeleton className="h-9 w-32" />
+          <Skeleton className="h-5 w-96 max-w-full" />
+        </div>
+      </div>
+
+      <div className="mb-8 flex items-center justify-between gap-4 rounded-xl border bg-card p-6 shadow-sm">
+        <div className="space-y-2">
+          <Skeleton className="h-6 w-56" />
+          <Skeleton className="h-4 w-80 max-w-full" />
+        </div>
+        <Skeleton className="h-11 w-40 rounded-lg" />
+      </div>
+
+      <div className="grid gap-8 lg:grid-cols-2">
+        <div className="space-y-6">
+          <Card>
+            <CardHeader>
+              <Skeleton className="h-6 w-24" />
+              <Skeleton className="h-4 w-48" />
+            </CardHeader>
+            <CardContent className="grid grid-cols-2 gap-4">
+              {[0, 1, 2, 3, 4].map((item) => (
+                <div key={item} className={item === 4 ? "col-span-2 space-y-2" : "space-y-2"}>
+                  <Skeleton className="h-3 w-12" />
+                  <Skeleton className="h-5 w-32" />
+                </div>
+              ))}
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <Skeleton className="h-6 w-28" />
+              <Skeleton className="h-4 w-72 max-w-full" />
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <Skeleton className="h-9 w-full rounded-lg" />
+              <Skeleton className="h-[260px] w-full rounded-lg" />
+              <div className="flex items-center justify-between">
+                <Skeleton className="h-4 w-24" />
+                <Skeleton className="h-8 w-20 rounded-lg" />
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <Skeleton className="h-6 w-32" />
+                <Skeleton className="h-5 w-8 rounded-4xl" />
+              </div>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              {[0, 1, 2].map((item) => (
+                <Skeleton key={item} className="h-24 w-full rounded-lg" />
+              ))}
+            </CardContent>
+          </Card>
+        </div>
+
+        <Card className="border-primary/20 bg-white shadow-lg">
+          <CardHeader className="flex flex-row items-center justify-between bg-white pb-4">
+            <div className="space-y-2">
+              <Skeleton className="h-6 w-32" />
+              <Skeleton className="h-4 w-20" />
+            </div>
+            <Skeleton className="h-8 w-28 rounded-lg" />
+          </CardHeader>
+          <CardContent className="space-y-8 p-8">
+            <div className="space-y-3 text-center">
+              <Skeleton className="mx-auto h-9 w-36" />
+              <Skeleton className="mx-auto h-4 w-48" />
+              <Skeleton className="mx-auto h-4 w-40" />
+            </div>
+            {[0, 1, 2, 3].map((section) => (
+              <div key={section} className="space-y-4">
+                <Separator />
+                <Skeleton className="h-6 w-40" />
+                <Skeleton className="h-4 w-full" />
+                <Skeleton className="h-4 w-11/12" />
+                <Skeleton className="h-4 w-3/4" />
+              </div>
+            ))}
+          </CardContent>
+        </Card>
+      </div>
+    </div>
+  );
+}
 
 export default function ResumePage() {
   const queryClient = useQueryClient();
@@ -256,11 +357,7 @@ export default function ResumePage() {
   const hasResumeData = resume && resume.summarizedExperiences && resume.summarizedExperiences.length > 0;
 
   if (isLoading) {
-    return (
-      <div className="flex min-h-[60vh] items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
-      </div>
-    );
+    return <ResumePageSkeleton />;
   }
 
   const coverLetterEditorCard = (

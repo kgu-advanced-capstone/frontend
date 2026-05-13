@@ -1,6 +1,11 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { renderHook, type RenderHookOptions } from "@testing-library/react";
-import type { ReactNode } from "react";
+import {
+  render,
+  renderHook,
+  type RenderHookOptions,
+  type RenderOptions,
+} from "@testing-library/react";
+import type { ReactElement, ReactNode } from "react";
 
 export function createTestQueryClient() {
   return new QueryClient({
@@ -27,4 +32,15 @@ export function renderHookWithClient<T, P>(
     <QueryClientProvider client={qc}>{children}</QueryClientProvider>
   );
   return { ...renderHook(hook, { wrapper, ...options }), queryClient: qc };
+}
+
+export function renderWithClient(
+  ui: ReactElement,
+  options?: Omit<RenderOptions, "wrapper">
+) {
+  const qc = createTestQueryClient();
+  const wrapper = ({ children }: { children: ReactNode }) => (
+    <QueryClientProvider client={qc}>{children}</QueryClientProvider>
+  );
+  return { ...render(ui, { wrapper, ...options }), queryClient: qc };
 }
