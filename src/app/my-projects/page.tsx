@@ -25,6 +25,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
+import { Skeleton } from "@/components/ui/skeleton";
 import {
   Dialog,
   DialogContent,
@@ -79,6 +80,52 @@ const defaultCreateForm = {
   deadline: "",
   category: "웹",
 };
+
+function MyProjectsSkeleton() {
+  return (
+    <div
+      className="space-y-6"
+      role="status"
+      aria-label="내 프로젝트 불러오는 중"
+    >
+      {[0, 1].map((card) => (
+        <Card key={card}>
+          <CardHeader>
+            <div className="flex items-start justify-between gap-4">
+              <div className="flex-1 space-y-3">
+                <div className="flex flex-wrap items-center gap-2">
+                  <Skeleton className="h-6 w-44" />
+                  <Skeleton className="h-5 w-16 rounded-4xl" />
+                  <Skeleton className="h-5 w-14 rounded-4xl" />
+                  <Skeleton className="h-5 w-20 rounded-4xl" />
+                </div>
+                <div className="flex flex-wrap gap-1.5">
+                  <Skeleton className="h-5 w-16 rounded-4xl" />
+                  <Skeleton className="h-5 w-20 rounded-4xl" />
+                  <Skeleton className="h-5 w-14 rounded-4xl" />
+                </div>
+                <Skeleton className="h-4 w-32" />
+              </div>
+              <Skeleton className="h-8 w-28 rounded-lg" />
+            </div>
+          </CardHeader>
+          <CardContent className="space-y-5">
+            <div className="space-y-2">
+              <Skeleton className="h-4 w-20" />
+              <Skeleton className="h-[200px] w-full rounded-lg" />
+              <Skeleton className="h-8 w-20 rounded-lg" />
+            </div>
+            <Separator />
+            <div className="flex items-center gap-3">
+              <Skeleton className="h-9 w-24 rounded-lg" />
+              <Skeleton className="h-4 w-56" />
+            </div>
+          </CardContent>
+        </Card>
+      ))}
+    </div>
+  );
+}
 
 /** 개별 프로젝트의 경험 기록 섹션 */
 function ExperienceSection({ projectId }: { projectId: number }) {
@@ -337,9 +384,7 @@ export default function MyProjectsPage() {
       </div>
 
       {isLoading ? (
-        <div className="flex justify-center py-20">
-          <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary/20 border-t-primary" />
-        </div>
+        <MyProjectsSkeleton />
       ) : myProjects.length === 0 ? (
         <Card>
           <CardContent className="flex flex-col items-center justify-center py-20">

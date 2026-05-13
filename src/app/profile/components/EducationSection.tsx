@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
+import { Skeleton } from "@/components/ui/skeleton";
 import {
   Dialog,
   DialogContent,
@@ -61,6 +62,23 @@ function toEducationPayload(form: EducationFormState): EducationRequest {
     startDate: form.startDate,
     endDate: form.endDate || null,
   };
+}
+
+function EducationListSkeleton() {
+  return (
+    <div className="space-y-4" role="status" aria-label="학력 불러오는 중">
+      {[0, 1].map((item) => (
+        <div key={item} className="flex items-start gap-4">
+          <Skeleton className="mt-1 h-10 w-10 rounded-lg" />
+          <div className="flex-1 space-y-2">
+            <Skeleton className="h-5 w-40" />
+            <Skeleton className="h-4 w-52" />
+            <Skeleton className="h-3 w-36" />
+          </div>
+        </div>
+      ))}
+    </div>
+  );
 }
 
 export function EducationSection() {
@@ -205,9 +223,7 @@ export function EducationSection() {
       </CardHeader>
       <CardContent className="space-y-4">
         {isLoading ? (
-          <div className="flex justify-center py-8">
-            <div className="h-6 w-6 animate-spin rounded-full border-2 border-primary/20 border-t-primary" />
-          </div>
+          <EducationListSkeleton />
         ) : educations.length === 0 ? (
           <div className="flex flex-col items-center justify-center rounded-lg border border-dashed py-10 text-center">
             <GraduationCap className="mb-2 h-10 w-10 text-muted-foreground/40" />
