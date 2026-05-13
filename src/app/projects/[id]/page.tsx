@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
+import { Skeleton } from "@/components/ui/skeleton";
 import {
   Dialog,
   DialogContent,
@@ -16,6 +17,90 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import * as projectApi from "@/api/generated/project/project";
+
+function ProjectDetailSkeleton() {
+  return (
+    <div
+      className="mx-auto max-w-4xl px-6 py-12"
+      role="status"
+      aria-label="프로젝트 상세 불러오는 중"
+    >
+      <Skeleton className="mb-6 h-5 w-24" />
+
+      <div className="flex items-start justify-between gap-4">
+        <div className="space-y-3">
+          <Skeleton className="h-6 w-20 rounded-4xl" />
+          <Skeleton className="h-9 w-80 max-w-full" />
+          <Skeleton className="h-5 w-44" />
+        </div>
+        <Skeleton className="h-11 w-32 rounded-lg" />
+      </div>
+
+      <Separator className="my-8" />
+
+      <div className="grid gap-8 md:grid-cols-3">
+        <div className="space-y-8 md:col-span-2">
+          <Card>
+            <CardHeader>
+              <Skeleton className="h-6 w-28" />
+            </CardHeader>
+            <CardContent className="space-y-3">
+              <Skeleton className="h-5 w-full" />
+              <Skeleton className="h-5 w-11/12" />
+              <Skeleton className="h-5 w-3/4" />
+              <Skeleton className="mt-4 h-5 w-full" />
+              <Skeleton className="h-5 w-10/12" />
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <Skeleton className="h-6 w-24" />
+            </CardHeader>
+            <CardContent>
+              <div className="flex flex-wrap gap-2">
+                {[72, 88, 64, 96].map((width) => (
+                  <Skeleton key={width} className="h-6 rounded-4xl" style={{ width }} />
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <Skeleton className="h-6 w-28" />
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {[0, 1, 2].map((item) => (
+                <div key={item} className="flex items-center justify-between gap-3">
+                  <div className="flex items-center gap-3">
+                    <Skeleton className="h-9 w-9 rounded-full" />
+                    <div className="space-y-2">
+                      <Skeleton className="h-4 w-24" />
+                      <Skeleton className="h-3 w-36" />
+                    </div>
+                  </div>
+                  <Skeleton className="h-5 w-12" />
+                </div>
+              ))}
+            </CardContent>
+          </Card>
+        </div>
+
+        <Card className="h-fit">
+          <CardHeader>
+            <Skeleton className="h-5 w-24" />
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <Skeleton className="h-5 w-32" />
+            <Skeleton className="h-5 w-36" />
+            <Skeleton className="h-5 w-28" />
+          </CardContent>
+        </Card>
+      </div>
+    </div>
+  );
+}
 
 export default function ProjectDetailPage({
   params,
@@ -40,11 +125,7 @@ export default function ProjectDetailPage({
   const joined = myProjects?.some((mp) => mp.project?.id === projectId) ?? false;
 
   if (isLoading) {
-    return (
-      <div className="flex min-h-[60vh] items-center justify-center">
-        <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary/20 border-t-primary" />
-      </div>
-    );
+    return <ProjectDetailSkeleton />;
   }
 
   if (!project) {
