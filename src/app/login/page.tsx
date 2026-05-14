@@ -113,7 +113,7 @@ export default function LoginPage() {
           </div>
 
           <a
-            href={process.env.NEXT_PUBLIC_GOOGLE_LOGIN_URL}
+            href="https://pcserver.cloud/oauth2/authorization/google"
             className="mt-4 flex w-full items-center justify-center gap-3 rounded-md border border-input bg-background px-4 py-2 text-sm font-medium shadow-sm transition-colors hover:bg-accent hover:text-accent-foreground"
           >
             <svg viewBox="0 0 24 24" className="h-4 w-4" aria-hidden="true">
