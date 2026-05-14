@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { FileText, ArrowRight, FolderOpen, Download, Loader2, Sparkles, RefreshCw, Save, RotateCcw } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
@@ -14,12 +14,11 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
-import * as resumeApi from "@/api/generated/resume/resume";
+import * as resumeApi from "@/api/resume";
 import * as projectApi from "@/api/generated/project/project";
 import { useEducations } from "@/api/educations";
 import { useCertifications } from "@/api/certifications";
 import {
-  COVER_LETTER_STORAGE_KEY,
   DEFAULT_COVER_LETTER_DRAFT,
   type CoverLetterDraft,
   coverLetterToHtml,
@@ -131,24 +130,7 @@ export default function ResumePage() {
   const queryClient = useQueryClient();
   const [coverLetterDraft, setCoverLetterDraft] = useState<CoverLetterDraft>(DEFAULT_COVER_LETTER_DRAFT);
   const [isCoverLetterLoaded, setIsCoverLetterLoaded] = useState(false);
-
-  useEffect(() => {
-    try {
-      const storedDraft = window.localStorage.getItem(COVER_LETTER_STORAGE_KEY);
-      if (storedDraft) {
-        setCoverLetterDraft(normalizeCoverLetterDraft(JSON.parse(storedDraft) as Partial<CoverLetterDraft>));
-      }
-    } catch {
-      setCoverLetterDraft(DEFAULT_COVER_LETTER_DRAFT);
-    } finally {
-      setIsCoverLetterLoaded(true);
-    }
-  }, []);
-
-  useEffect(() => {
-    if (!isCoverLetterLoaded) return;
-    window.localStorage.setItem(COVER_LETTER_STORAGE_KEY, JSON.stringify(coverLetterDraft));
-  }, [coverLetterDraft, isCoverLetterLoaded]);
+  const lastSavedDraftRef = useRef<CoverLetterDraft | null>(null);
 
   // 내 프로젝트 목록 (요약 대상 확인용)
   const { data: myProjects = [] } = projectApi.useGetMyProjects({
@@ -161,25 +143,33 @@ export default function ResumePage() {
   const { data: certifications = [] } = useCertifications();
 
   // 이력서 조회
-  const { data: resume, isLoading, status } = resumeApi.useGetResume({
-    query: {
-      select: (res) => res.data,
-      retry: false, // 404 등의 경우 재시도하지 않음
-    }
-  });
+  const resumeQuery = resumeApi.useResume();
+  const resume = resumeQuery.data;
 
   // 이력서 생성
-  const generateMutation = resumeApi.useGenerate({
-    mutation: {
-      onSuccess: () => {
-        // 이력서 생성 성공 시 쿼리 무효화하여 최신 데이터 불러오기
-        queryClient.invalidateQueries({ queryKey: resumeApi.getGetResumeQueryKey() });
-      }
-    }
-  });
+  const generateMutation = resumeApi.useGenerateResume();
+  const saveDraftMutation = resumeApi.useSaveResumeDraft();
+
+  useEffect(() => {
+    if (isCoverLetterLoaded) return;
+    if (resumeQuery.isLoading || resumeQuery.isFetching) return;
+
+    const initialDraft = normalizeCoverLetterDraft({
+      title: resume?.coverLetterTitle,
+      content: resume?.coverLetterContent,
+    });
+
+    setCoverLetterDraft(initialDraft);
+    lastSavedDraftRef.current = initialDraft;
+    setIsCoverLetterLoaded(true);
+  }, [isCoverLetterLoaded, resume?.coverLetterContent, resume?.coverLetterTitle, resumeQuery.isFetching, resumeQuery.isLoading]);
 
   const handleGenerate = () => {
-    generateMutation.mutate();
+    generateMutation.mutate(undefined, {
+      onSuccess: async () => {
+        await queryClient.invalidateQueries({ queryKey: resumeApi.resumeQueryKey });
+      },
+    });
   };
 
   const normalizedCoverLetterDraft = useMemo(
@@ -188,24 +178,47 @@ export default function ResumePage() {
   );
   const hasCoverLetter = hasCoverLetterContent(coverLetterDraft);
 
-  const persistCoverLetterDraft = (draft: CoverLetterDraft) => {
-    if (typeof window === "undefined") return;
-    window.localStorage.setItem(COVER_LETTER_STORAGE_KEY, JSON.stringify(draft));
-  };
+  useEffect(() => {
+    if (!isCoverLetterLoaded) return;
+    if (saveDraftMutation.isPending) return;
+
+    const isSameAsSaved =
+      lastSavedDraftRef.current?.title === normalizedCoverLetterDraft.title &&
+      lastSavedDraftRef.current?.content === normalizedCoverLetterDraft.content;
+
+    if (isSameAsSaved) return;
+
+    const timeoutId = window.setTimeout(() => {
+      queryClient.cancelQueries({ queryKey: resumeApi.resumeQueryKey });
+      saveDraftMutation.mutate(
+        {
+          coverLetterTitle: normalizedCoverLetterDraft.title,
+          coverLetterContent: normalizedCoverLetterDraft.content,
+        },
+        {
+          onSuccess: (savedResume) => {
+            const savedDraft = normalizeCoverLetterDraft({
+              title: savedResume.coverLetterTitle,
+              content: savedResume.coverLetterContent,
+            });
+
+            lastSavedDraftRef.current = savedDraft;
+            setCoverLetterDraft(savedDraft);
+            queryClient.setQueryData(resumeApi.resumeQueryKey, savedResume);
+          },
+        }
+      );
+    }, 500);
+
+    return () => window.clearTimeout(timeoutId);
+  }, [isCoverLetterLoaded, normalizedCoverLetterDraft, queryClient, saveDraftMutation, saveDraftMutation.isPending]);
 
   const updateCoverLetterField = (field: keyof CoverLetterDraft, value: string) => {
-    setCoverLetterDraft((prev) => {
-      const nextDraft = { ...prev, [field]: value };
-      if (isCoverLetterLoaded) {
-        persistCoverLetterDraft(nextDraft);
-      }
-      return nextDraft;
-    });
+    setCoverLetterDraft((prev) => ({ ...prev, [field]: value }));
   };
 
   const handleResetCoverLetter = () => {
     setCoverLetterDraft(DEFAULT_COVER_LETTER_DRAFT);
-    persistCoverLetterDraft(DEFAULT_COVER_LETTER_DRAFT);
   };
 
   const handleDownloadPDF = useCallback(() => {
@@ -353,10 +366,10 @@ export default function ResumePage() {
     }, 500);
   }, [certifications, educations, myProjects, normalizedCoverLetterDraft, resume]);
 
-  const isNotFound = status === "error" || !resume;
-  const hasResumeData = resume && resume.summarizedExperiences && resume.summarizedExperiences.length > 0;
+  const hasGeneratedResume = Boolean(resume?.summarizedExperiences && resume.summarizedExperiences.length > 0);
+  const isNotFound = !resume;
 
-  if (isLoading) {
+  if (resumeQuery.isLoading) {
     return <ResumePageSkeleton />;
   }
 
@@ -368,7 +381,7 @@ export default function ResumePage() {
           자기소개서
         </CardTitle>
         <CardDescription>
-          작성한 내용은 이 브라우저의 localStorage에 자동 저장됩니다.
+          작성한 내용은 서버에 자동 저장됩니다.
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
@@ -401,7 +414,11 @@ export default function ResumePage() {
         <div className="flex items-center justify-between gap-3">
           <div className="flex items-center gap-2 text-xs text-muted-foreground">
             <Save size={14} />
-            {isCoverLetterLoaded ? "자동 저장됨" : "불러오는 중"}
+            {saveDraftMutation.isPending
+              ? "서버에 저장 중"
+              : isCoverLetterLoaded
+                ? "서버에 자동 저장됨"
+                : "불러오는 중"}
           </div>
           <Button
             type="button"
@@ -438,12 +455,12 @@ export default function ResumePage() {
       <div className="mb-8 flex items-center justify-between gap-4 rounded-xl border bg-card p-6 shadow-sm">
         <div className="space-y-1">
           <h3 className="font-semibold text-lg">
-            {isNotFound ? "아직 생성된 이력서가 없습니다" : "이력서가 준비되었습니다"}
+            {hasGeneratedResume ? "이력서가 준비되었습니다" : "아직 생성된 이력서가 없습니다"}
           </h3>
           <p className="text-sm text-muted-foreground">
-            {isNotFound
-              ? "프로젝트 관리에서 AI 요약을 진행한 후 아래 버튼을 눌러 이력서를 생성하세요."
-              : `마지막 업데이트: ${resume?.generatedAt ? new Date(resume.generatedAt).toLocaleString("ko-KR") : "알 수 없음"}`}
+            {hasGeneratedResume
+              ? `마지막 업데이트: ${resume?.generatedAt ? new Date(resume.generatedAt).toLocaleString("ko-KR") : "알 수 없음"}`
+              : "자기소개서는 서버에 자동 저장되고, 프로젝트 관리에서 AI 요약 후 이력서를 생성할 수 있습니다."}
           </p>
         </div>
         <Button
@@ -471,7 +488,7 @@ export default function ResumePage() {
         </Button>
       </div>
 
-      {isNotFound || !hasResumeData ? (
+      {isNotFound || !hasGeneratedResume ? (
         <div className="grid gap-8 lg:grid-cols-2">
           <div>{coverLetterEditorCard}</div>
           <Card className="border-dashed">
@@ -483,7 +500,7 @@ export default function ResumePage() {
                 보여줄 이력서 내용이 없습니다
               </p>
               <p className="mt-2 max-w-sm text-sm text-muted-foreground">
-                자기소개서는 먼저 작성할 수 있고, 이력서 생성 후 PDF 미리보기와 다운로드에 함께 반영됩니다.
+                자기소개서는 서버에 자동 저장되고, 이력서 생성 후 PDF 미리보기와 다운로드에 함께 반영됩니다.
               </p>
               <div className="mt-8 flex gap-3">
                 <Link
@@ -642,7 +659,7 @@ export default function ResumePage() {
                     </div>
                   ) : (
                     <p className="text-sm text-muted-foreground">
-                      좌측에서 자기소개서를 작성하면 PDF 미리보기와 다운로드에 함께 반영됩니다.
+                      좌측에서 작성한 자기소개서는 서버에 자동 저장되며, PDF 미리보기와 다운로드에 함께 반영됩니다.
                     </p>
                   )}
                 </div>
