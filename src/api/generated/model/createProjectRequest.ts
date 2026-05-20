@@ -13,8 +13,6 @@ export interface CreateProjectRequest {
   description?: string;
   /** 카테고리 */
   category: string;
-  /** 사용 기술 스택 */
-  skills?: string[];
   /**
      * 최대 팀원 수 (2명 이상)
      * @minimum 2

@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { useQueryClient } from "@tanstack/react-query";
 import {
   Brain,
   Sparkles,
@@ -75,7 +76,6 @@ const nextStatusLabel: Record<ProjectStatus, string> = {
 const defaultCreateForm = {
   title: "",
   description: "",
-  skills: "",
   maxMembers: "4",
   deadline: "",
   category: "웹",
@@ -335,6 +335,17 @@ export default function MyProjectsPage() {
   const { data: myProjects = [], isLoading } = projectApi.useGetMyProjects({
     query: {
       select: (res) => res.data,
+      refetchInterval: (query) => {
+        const payload = query.state.data as
+          | Array<{ project?: { skillExtractionStatus?: string } }>
+          | { data?: Array<{ project?: { skillExtractionStatus?: string } }> }
+          | undefined;
+        const items = Array.isArray(payload) ? payload : payload?.data;
+        const hasPending = items?.some(
+          (mp) => mp.project?.skillExtractionStatus === "IN_PROGRESS"
+        );
+        return hasPending ? 2000 : false;
+      },
     }
   });
   const createMutation = projectApi.useCreateProject();
@@ -342,6 +353,7 @@ export default function MyProjectsPage() {
 
   const [showCreate, setShowCreate] = useState(false);
   const [createForm, setCreateForm] = useState(defaultCreateForm);
+  const queryClient = useQueryClient();
 
   const handleCreateSubmit = () => {
     if (!createForm.title.trim()) return;
@@ -350,10 +362,6 @@ export default function MyProjectsPage() {
         data: {
           title: createForm.title,
           description: createForm.description || undefined,
-          skills: createForm.skills
-            .split(",")
-            .map((s) => s.trim())
-            .filter(Boolean),
           maxMembers: parseInt(createForm.maxMembers) || 4,
           deadline: createForm.deadline || undefined,
           category: createForm.category,
@@ -361,8 +369,9 @@ export default function MyProjectsPage() {
       },
       {
         onSuccess: () => {
-          setCreateForm(defaultCreateForm);
           setShowCreate(false);
+          setCreateForm(defaultCreateForm);
+          queryClient.invalidateQueries({ queryKey: projectApi.getGetMyProjectsQueryKey() });
         },
       }
     );
@@ -415,6 +424,7 @@ export default function MyProjectsPage() {
             const StatusIcon = status.icon;
             const canRecord = currentStatus !== "recruiting";
             const next = nextStatus[currentStatus];
+            const isSkillExtractionInProgress = mp.project?.skillExtractionStatus === "IN_PROGRESS";
 
             return (
               <Card key={mp.project?.id}>
@@ -433,11 +443,20 @@ export default function MyProjectsPage() {
                         )}
                       </div>
                       <div className="mt-2 flex flex-wrap gap-1.5">
-                        {mp.project?.skills?.map((skill) => (
-                          <Badge key={skill as string} variant="outline" className="text-xs font-normal">
-                            {skill as string}
-                          </Badge>
-                        ))}
+                        {isSkillExtractionInProgress ? (
+                          <>
+                            <Skeleton className="h-5 w-16 rounded-4xl" />
+                            <Skeleton className="h-5 w-20 rounded-4xl" />
+                            <Skeleton className="h-5 w-14 rounded-4xl" />
+                            <span className="sr-only">AI가 기술 스택을 분석 중입니다...</span>
+                          </>
+                        ) : (
+                          mp.project?.skills?.map((skill) => (
+                            <Badge key={skill as string} variant="outline" className="text-xs font-normal">
+                              {skill as string}
+                            </Badge>
+                          ))
+                        )}
                       </div>
                       <p className="mt-2 text-xs text-muted-foreground">참여일: {mp.joinedAt}</p>
                       {(mp.project?.participants?.length ?? 0) > 0 && (
@@ -506,7 +525,7 @@ export default function MyProjectsPage() {
           <DialogHeader>
             <DialogTitle>새 프로젝트 생성</DialogTitle>
             <DialogDescription>
-              새로운 프로젝트를 생성하고 팀원을 모집하세요.
+              새로운 프로젝트를 생성하고 팀원을 모집하세요. 기술 스택은 설명을 바탕으로 AI가 자동 추출합니다.
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-2">
@@ -523,7 +542,7 @@ export default function MyProjectsPage() {
               <Textarea
                 value={createForm.description}
                 onChange={(e) => setCreateForm((f) => ({ ...f, description: e.target.value }))}
-                placeholder="프로젝트에 대해 간단히 설명해주세요"
+                placeholder="프로젝트에 대해 간단히 설명해주세요. 설명에 포함된 기술명을 바탕으로 AI가 기술 스택을 추출합니다."
                 className="min-h-[80px]"
               />
             </div>
@@ -556,14 +575,6 @@ export default function MyProjectsPage() {
               </div>
             </div>
             <div>
-              <Label className="mb-2 block">기술 스택 (쉼표로 구분)</Label>
-              <Input
-                value={createForm.skills}
-                onChange={(e) => setCreateForm((f) => ({ ...f, skills: e.target.value }))}
-                placeholder="React, TypeScript, Node.js"
-              />
-            </div>
-            <div>
               <Label className="mb-2 block">마감일</Label>
               <Input
                 type="date"
@@ -571,6 +582,7 @@ export default function MyProjectsPage() {
                 onChange={(e) => setCreateForm((f) => ({ ...f, deadline: e.target.value }))}
               />
             </div>
+
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setShowCreate(false)}>
