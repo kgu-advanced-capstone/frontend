@@ -12,14 +12,15 @@ import type {
   ResumeResponse,
   UpdateProfileRequest,
   UpdateProjectStatusRequest,
-  UserResponse,
+  UserWithRole,
+  HrUserItem,
 } from "@/api/types";
 
 const BASE = "/api";
 
 // ─── In-memory DB ───
-let users: UserResponse[] = [];
-let currentUser: UserResponse | null = null;
+let users: UserWithRole[] = [];
+let currentUser: UserWithRole | null = null;
 let nextUserId = 1;
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -65,6 +66,17 @@ let nextEducationId = 1;
 let certifications: CertificationRecord[] = [];
 let nextCertificationId = 1;
 
+const hrDummyUsers: HrUserItem[] = [
+  { id: 1, name: "김철수", email: "kim@example.com", certificationNames: ["정보처리기사", "SQLD"], projectSkills: ["Java", "Spring", "MySQL"] },
+  { id: 2, name: "이영희", email: "lee@example.com", certificationNames: ["AWS Solutions Architect"], projectSkills: ["Python", "Django", "PostgreSQL"] },
+  { id: 3, name: "박민준", email: "park@example.com", certificationNames: ["정보처리기사"], projectSkills: ["React", "TypeScript", "Node.js"] },
+  { id: 4, name: "최수연", email: "choi@example.com", certificationNames: ["SQLD", "정보보안기사"], projectSkills: ["Java", "Kotlin", "Spring"] },
+  { id: 5, name: "정도윤", email: "jung@example.com", certificationNames: [], projectSkills: ["Flutter", "Dart", "Firebase"] },
+  { id: 6, name: "강지훈", email: "kang@example.com", certificationNames: ["AWS Solutions Architect", "정보처리기사"], projectSkills: ["Go", "Docker", "Kubernetes"] },
+  { id: 7, name: "윤서아", email: "yoon@example.com", certificationNames: ["SQLD"], projectSkills: ["Python", "FastAPI", "React"] },
+  { id: 8, name: "임현우", email: "lim@example.com", certificationNames: ["정보처리기사"], projectSkills: ["Spring", "JPA", "MySQL"] },
+];
+
 // ─── Helper ───
 function addNotification(message: string) {
   notifications.unshift({
@@ -109,11 +121,12 @@ export const handlers = [
   // POST /auth/register
   http.post(`${BASE}/auth/register`, async ({ request }) => {
     const body = (await request.json()) as RegisterRequest;
-    const user: UserResponse = {
+    const user: UserWithRole = {
       id: nextUserId++,
       email: body.email,
       name: body.name,
       profileImage: undefined,
+      role: "USER",
     };
     users.push(user);
     currentUser = user;
@@ -131,22 +144,24 @@ export const handlers = [
   // POST /auth/login
   http.post(`${BASE}/auth/login`, async ({ request }) => {
     const body = (await request.json()) as { email: string; password: string };
-    
+
     // Check in-memory DB (users)
     const user = users.find((u) => u.email === body.email);
-    
-    // For development convenience, allow test accounts if they don't exist in 'users'
-    if (!user && (body.email === "test@buildi.com" || body.email === "user@buildi.com")) {
-      const newUser = {
-        id: nextUserId++,
-        email: body.email,
-        name: body.email === "test@buildi.com" ? "홍길동" : "김빌디",
-        profileImage: undefined,
-      };
+
+    // 테스트 계정 (미리 등록되지 않은 경우 자동 생성)
+    const testAccounts: Record<string, { name: string; role: "USER" | "ADMIN" }> = {
+      "test@buildi.com": { name: "홍길동", role: "USER" },
+      "user@buildi.com": { name: "김빌디", role: "USER" },
+      "admin@buildi.com": { name: "관리자", role: "ADMIN" },
+    };
+
+    if (!user && testAccounts[body.email]) {
+      const { name, role } = testAccounts[body.email];
+      const newUser: UserWithRole = { id: nextUserId++, email: body.email, name, profileImage: undefined, role };
       users.push(newUser);
       currentUser = newUser;
-      profile = { ...profile, name: newUser.name, email: newUser.email };
-      return HttpResponse.json(newUser);
+      profile = { ...profile, name, email: body.email };
+      return HttpResponse.json({ accessToken: "mock-token", role });
     }
 
     if (!user || body.password === "fail") {
@@ -155,7 +170,7 @@ export const handlers = [
 
     currentUser = user;
     profile = { phone: null, github: null, blog: null, profileImage: null, name: user.name, email: user.email };
-    return HttpResponse.json(user);
+    return HttpResponse.json({ accessToken: "mock-token", role: user.role ?? "USER" });
   }),
 
   // POST /auth/logout
@@ -356,7 +371,8 @@ export const handlers = [
       title: body.title,
       description: body.description ?? undefined,
       category: body.category,
-      skills: body.skills || [],
+      skills: [],  // 초기값 빈 배열
+      skillExtractionStatus: 'IN_PROGRESS',  // 새 필드
       participants: [{
         userId: currentUser?.id,
         name: currentUser?.name,
@@ -375,6 +391,13 @@ export const handlers = [
       isOwner: true,
     });
     addNotification(`"${project.title}" 프로젝트를 생성했습니다.`);
+    
+    // 2초 후 상태 변경 (폴링 시뮬레이션)
+    setTimeout(() => {
+      project.skillExtractionStatus = 'COMPLETED';
+      project.skills = ['React', 'Node.js'];  // 시뮬레이션 기술
+    }, 2000);
+    
     return HttpResponse.json(project, { status: 201 });
   }),
 
@@ -563,6 +586,39 @@ export const handlers = [
   http.patch(`${BASE}/notifications/read-all`, () => {
     notifications.forEach((n) => (n.read = true));
     return HttpResponse.json(null, { status: 200 });
+  }),
+
+  // ─── HR ───
+
+  // GET /hr/users
+  http.get(`${BASE}/hr/users`, ({ request }) => {
+    const url = new URL(request.url);
+    const certFilter = url.searchParams.get("certifications");
+    const skillFilter = url.searchParams.get("skills");
+    const page = parseInt(url.searchParams.get("page") || "0");
+    const size = parseInt(url.searchParams.get("size") || "20");
+
+    const certList = certFilter ? certFilter.split(",").map((s) => s.trim()) : [];
+    const skillList = skillFilter ? skillFilter.split(",").map((s) => s.trim()) : [];
+
+    let filtered = [...hrDummyUsers];
+
+    if (certList.length > 0) {
+      filtered = filtered.filter((u) =>
+        certList.some((c) => u.certificationNames.includes(c))
+      );
+    }
+    if (skillList.length > 0) {
+      filtered = filtered.filter((u) =>
+        skillList.some((s) => u.projectSkills.includes(s))
+      );
+    }
+
+    const totalCount = filtered.length;
+    const totalPages = Math.ceil(totalCount / size);
+    const paged = filtered.slice(page * size, (page + 1) * size);
+
+    return HttpResponse.json({ users: paged, totalCount, totalPages, currentPage: page });
   }),
 ];
 

@@ -3,8 +3,6 @@ export interface CoverLetterDraft {
   content: string;
 }
 
-export const COVER_LETTER_STORAGE_KEY = "buildi.resume.coverLetter";
-
 export const DEFAULT_COVER_LETTER_DRAFT: CoverLetterDraft = {
   title: "자기소개서",
   content: "",

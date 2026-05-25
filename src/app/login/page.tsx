@@ -36,7 +36,6 @@ export default function LoginPage() {
 
     if (result.success) {
       track("login_success");
-      router.push("/");
     } else {
       track("login_error", { error: result.error });
       setError(result.error || "로그인에 실패했습니다.");

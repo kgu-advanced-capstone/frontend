@@ -17,6 +17,8 @@ export interface ProjectDetailResponse {
   /** 카테고리 */
   category?: string;
   skills?: unknown[];
+  /** 기술 스택 AI 추출 상태 (NONE, IN_PROGRESS, COMPLETED, FAILED) */
+  skillExtractionStatus?: string;
   participants?: ParticipantResponse[];
   /** 최대 팀원 수 */
   maxMembers?: number;

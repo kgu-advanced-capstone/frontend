@@ -79,7 +79,7 @@ describe("회원가입 & 인증", () => {
     expect((result.current.data as any).data.name).toBe("홍길동");
   });
 
-  it("POST /auth/login — 로그인 성공 시 유저 정보 반환", async () => {
+  it("POST /auth/login — 로그인 성공 시 accessToken과 role 반환", async () => {
     const { result } = renderHookWithClient(() => authApi.useLogin());
 
     result.current.mutate({
@@ -91,8 +91,8 @@ describe("회원가입 & 인증", () => {
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
     expect((result.current.data as any).data).toMatchObject({
-      email: "test@buildi.com",
-      name: "홍길동",
+      accessToken: "mock-token",
+      role: "USER",
     });
   });
 
@@ -186,7 +186,6 @@ describe("프로젝트 생성 & 탐색", () => {
         title: "AI 챗봇 개발",
         description: "GPT 기반 챗봇 프로젝트",
         category: "AI",
-        skills: ["Python", "FastAPI"],
         maxMembers: 4,
         deadline: "2026-06-30",
       }
@@ -275,7 +274,6 @@ describe("프로젝트 생성 & 탐색", () => {
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
     expect((result.current.data as any).data.title).toBe("AI 챗봇 개발");
     expect((result.current.data as any).data.description).toBe("GPT 기반 챗봇 프로젝트");
-    expect((result.current.data as any).data.skills).toEqual(["Python", "FastAPI"]);
   });
 });
 
@@ -512,7 +510,7 @@ describe("이력서 생성 & 조회", () => {
 
     // 프로젝트 생성 + 경험 작성 + AI 요약
     const { result: create } = renderHookWithClient(() => projectApi.useCreateProject());
-    create.current.mutate({ data: { title: "이력서용 프로젝트", category: "웹", skills: ["React", "Spring Boot"] } });
+    create.current.mutate({ data: { title: "이력서용 프로젝트", category: "웹" } });
     await waitFor(() => expect(create.current.isSuccess).toBe(true));
     const projectId = (create.current.data as any).data.id;
 
@@ -544,9 +542,6 @@ describe("이력서 생성 & 조회", () => {
     expect(
       (resume.current.data as any).data.summarizedExperiences[0].projectTitle
     ).toBe("이력서용 프로젝트");
-    expect(
-      (resume.current.data as any).data.summarizedExperiences[0].skills
-    ).toEqual(["React", "Spring Boot"]);
     expect((resume.current.data as any).data.generatedAt).toBeTruthy();
   });
 });
@@ -702,7 +697,6 @@ describe("전체 유저 플로우 (모든 API 통합)", () => {
         title: "풀스택 SaaS",
         description: "Next.js + Spring Boot SaaS 플랫폼",
         category: "웹",
-        skills: ["React", "Spring Boot", "PostgreSQL"],
         maxMembers: 5,
         deadline: "2026-09-01",
       }
@@ -720,7 +714,6 @@ describe("전체 유저 플로우 (모든 API 통합)", () => {
       projectApi.useGetProject(projectId)
     );
     await waitFor(() => expect(detail.current.isSuccess).toBe(true));
-    expect((detail.current.data as any).data.skills).toContain("React");
 
     // 8) 프로젝트 참가 신청
     const { result: apply } = renderHookWithClient(() => projectApi.useApplyProject());
