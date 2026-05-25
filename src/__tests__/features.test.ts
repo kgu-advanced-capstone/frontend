@@ -79,7 +79,7 @@ describe("회원가입 & 인증", () => {
     expect((result.current.data as any).data.name).toBe("홍길동");
   });
 
-  it("POST /auth/login — 로그인 성공 시 유저 정보 반환", async () => {
+  it("POST /auth/login — 로그인 성공 시 accessToken과 role 반환", async () => {
     const { result } = renderHookWithClient(() => authApi.useLogin());
 
     result.current.mutate({
@@ -91,8 +91,8 @@ describe("회원가입 & 인증", () => {
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
     expect((result.current.data as any).data).toMatchObject({
-      email: "test@buildi.com",
-      name: "홍길동",
+      accessToken: "mock-token",
+      role: "USER",
     });
   });
 

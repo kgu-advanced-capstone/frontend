@@ -3,7 +3,8 @@
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useQueryClient } from "@tanstack/react-query";
-import { getMeQueryKey } from "@/api/generated/auth/auth";
+import { getMeQueryKey, me } from "@/api/generated/auth/auth";
+import type { UserWithRole } from "@/api/types";
 
 export default function OAuthCallbackPage() {
   const router = useRouter();
@@ -13,12 +14,23 @@ export default function OAuthCallbackPage() {
     const hash = window.location.hash;
     const token = hash.startsWith("#token=") ? hash.slice("#token=".length) : "";
 
-    if (token) {
-      localStorage.setItem("accessToken", token);
-      qc.invalidateQueries({ queryKey: getMeQueryKey() });
-    }
+    const handleAuth = async () => {
+      if (token) {
+        localStorage.setItem("accessToken", token);
+        try {
+          const res = await me();
+          const user = res.data as UserWithRole;
+          qc.setQueryData(getMeQueryKey(), res);
+          router.replace(user?.role === "ADMIN" ? "/hr/users" : "/");
+        } catch {
+          router.replace("/");
+        }
+      } else {
+        router.replace("/");
+      }
+    };
 
-    router.replace("/");
+    handleAuth();
   }, [router, qc]);
 
   return (

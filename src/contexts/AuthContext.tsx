@@ -4,10 +4,10 @@ import { createContext, useContext, type ReactNode, useCallback } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 import * as auth from "@/api/generated/auth/auth";
-import type { UserResponse } from "@/api/generated/model";
+import type { UserWithRole, UserRole } from "@/api/types";
 
 interface AuthContextType {
-  user: UserResponse | null;
+  user: UserWithRole | null;
   isLoading: boolean;
   login: (email: string, password: string) => Promise<{ success: boolean; error?: string }>;
   register: (name: string, email: string, password: string, phone?: string) => Promise<{ success: boolean; error?: string }>;
@@ -20,15 +20,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const qc = useQueryClient();
   const router = useRouter();
 
-  // useMe 쿼리: 현재 사용자 정보 로드
   const { data: user, isLoading, refetch } = auth.useMe({
     query: {
-      select: (res) => res?.data as UserResponse,
+      select: (res) => res?.data as UserWithRole,
       retry: false,
-      staleTime: 1000 * 60 * 5, // 5분간 fresh 상태 유지
+      staleTime: 1000 * 60 * 5,
     }
   });
-  
+
   const loginMutation = auth.useLogin();
   const registerMutation = auth.useRegister();
   const logoutMutation = auth.useLogout();
@@ -36,11 +35,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const login = async (email: string, password: string) => {
     try {
       const res = await loginMutation.mutateAsync({ data: { email, password } });
-      const token = (res.data as unknown as { accessToken: string })?.accessToken;
-      if (token) {
-        localStorage.setItem('accessToken', token);
+      const loginData = res.data as unknown as { accessToken: string; role: UserRole };
+      if (loginData?.accessToken) {
+        localStorage.setItem('accessToken', loginData.accessToken);
       }
       await refetch();
+      router.push(loginData?.role === "ADMIN" ? "/hr/users" : "/");
       return { success: true };
     } catch (err) {
       const e = err as { response?: { status?: number } };
@@ -75,21 +75,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     } catch (error) {
       console.error("Logout request failed:", error);
     } finally {
-      // 서버 요청 성공 여부와 관계없이 클라이언트 상태는 초기화
       localStorage.removeItem('accessToken');
       qc.setQueryData(auth.getMeQueryKey(), null);
-      qc.clear(); // 모든 쿼리 캐시 삭제 (중요: 다른 유저의 데이터가 남지 않도록)
+      qc.clear();
       router.push("/");
     }
   }, [logoutMutation, qc, router]);
 
   return (
-    <AuthContext.Provider value={{ 
-      user: user ?? null, 
-      isLoading, 
-      login, 
-      register, 
-      logout 
+    <AuthContext.Provider value={{
+      user: user ?? null,
+      isLoading,
+      login,
+      register,
+      logout
     }}>
       {children}
     </AuthContext.Provider>
