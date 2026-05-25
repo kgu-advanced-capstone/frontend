@@ -37,3 +37,43 @@ export interface HrUsersParams {
   page?: number;
   size?: number;
 }
+
+export interface HrUserEducation {
+  id: number;
+  schoolName: string;
+  major?: string;
+  degree?: string;
+  startDate: string;
+  endDate?: string;
+}
+
+export interface HrUserCertification {
+  id: number;
+  name: string;
+  issuingOrganization?: string;
+  issuedDate: string;
+}
+
+export type HrUserProjectStatus = "RECRUITING" | "IN_PROGRESS" | "COMPLETED";
+
+export interface HrUserProject {
+  id: number;
+  title: string;
+  category: string;
+  skills: string[];
+  status: HrUserProjectStatus;
+  createdAt: string;
+}
+
+export interface HrUserDetail {
+  id: number;
+  name: string;
+  email: string;
+  phone?: string;
+  github?: string;
+  blog?: string;
+  profileImage?: string;
+  educations: HrUserEducation[];
+  certifications: HrUserCertification[];
+  projects: HrUserProject[];
+}
