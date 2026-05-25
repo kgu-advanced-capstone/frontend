@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Mail, Lock, AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -13,7 +12,6 @@ import { useTrack } from "@/hooks/useTrack";
 
 export default function LoginPage() {
   const { login } = useAuth();
-  const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");

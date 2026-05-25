@@ -139,7 +139,11 @@ export default function HrUsersPage() {
           ) : (
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
               {data?.users.map((u) => (
-                <Card key={u.id} className="transition-all hover:shadow-md hover:border-primary/30">
+                <Card
+                  key={u.id}
+                  className="cursor-pointer transition-all hover:shadow-md hover:border-primary/30"
+                  onClick={() => router.push(`/hr/users/${u.id}`)}
+                >
                   <CardContent className="p-5">
                     <div className="flex items-center gap-3">
                       <Avatar>

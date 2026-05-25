@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import type { HrUsersParams, HrUsersResponse } from "./types";
+import type { HrUsersParams, HrUsersResponse, HrUserDetail } from "./types";
 import { customInstance } from "./mutator/custom-instance";
 
 type HrUsersApiResponse = {
@@ -8,8 +8,17 @@ type HrUsersApiResponse = {
   headers: Headers;
 };
 
+type HrUserDetailApiResponse = {
+  data: HrUserDetail;
+  status: 200;
+  headers: Headers;
+};
+
 export const getHrUsersQueryKey = (params?: HrUsersParams) =>
   ["/api/hr/users", params] as const;
+
+export const getHrUserDetailQueryKey = (userId: number) =>
+  ["/api/hr/users", userId] as const;
 
 const getHrUsers = async (params?: HrUsersParams): Promise<HrUsersResponse> => {
   const searchParams = new URLSearchParams();
@@ -24,8 +33,23 @@ const getHrUsers = async (params?: HrUsersParams): Promise<HrUsersResponse> => {
   return res.data;
 };
 
+const getHrUserDetail = async (userId: number): Promise<HrUserDetail> => {
+  const res = await customInstance<HrUserDetailApiResponse>(
+    `/api/hr/users/${userId}`,
+    { method: "GET" }
+  );
+  return res.data;
+};
+
 export const useGetHrUsers = (params?: HrUsersParams) =>
   useQuery({
     queryKey: getHrUsersQueryKey(params),
     queryFn: () => getHrUsers(params),
+  });
+
+export const useGetHrUserDetail = (userId: number) =>
+  useQuery({
+    queryKey: getHrUserDetailQueryKey(userId),
+    queryFn: () => getHrUserDetail(userId),
+    enabled: !!userId,
   });

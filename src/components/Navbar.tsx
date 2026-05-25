@@ -118,7 +118,7 @@ export default function Navbar() {
                             "w-full px-4 py-3 text-left text-sm transition-colors hover:bg-muted/50",
                             !n.read && "bg-primary/5"
                           )}
-                          onClick={() => { track("notification_read", { notificationId: n.id }); n.id && markAsRead.mutate({ id: n.id }); }}
+                          onClick={() => { track("notification_read", { notificationId: n.id }); if (n.id) markAsRead.mutate({ id: n.id }); }}
                         >
                           <p className={cn("leading-snug", !n.read && "font-medium")}>
                             {n.message}

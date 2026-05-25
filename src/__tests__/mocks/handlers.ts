@@ -14,6 +14,7 @@ import type {
   UpdateProjectStatusRequest,
   UserWithRole,
   HrUserItem,
+  HrUserDetail,
 } from "@/api/types";
 
 const BASE = "/api";
@@ -589,6 +590,44 @@ export const handlers = [
   }),
 
   // ─── HR ───
+
+  // GET /hr/users/:userId
+  http.get(`${BASE}/hr/users/:userId`, ({ params }) => {
+    const userId = Number(params.userId);
+    const user = hrDummyUsers.find((u) => u.id === userId);
+    if (!user) {
+      return HttpResponse.json({ message: "Not Found" }, { status: 404 });
+    }
+    const detail: HrUserDetail = {
+      id: user.id,
+      name: user.name,
+      email: user.email,
+      profileImage: user.profileImage,
+      phone: "010-1234-5678",
+      github: `https://github.com/${user.name.toLowerCase().replace(/\s/g, "")}`,
+      blog: undefined,
+      educations: [
+        { id: 1, schoolName: "경기대학교", major: "컴퓨터공학과", degree: "학사", startDate: "2020-03-01", endDate: "2024-02-29" },
+      ],
+      certifications: user.certificationNames.map((name, i) => ({
+        id: i + 1,
+        name,
+        issuingOrganization: "한국산업인력공단",
+        issuedDate: "2023-11-15",
+      })),
+      projects: user.projectSkills.length > 0 ? [
+        {
+          id: userId * 10,
+          title: `${user.name}의 프로젝트`,
+          category: "웹",
+          skills: user.projectSkills.slice(0, 3),
+          status: "COMPLETED",
+          createdAt: "2026-03-01",
+        },
+      ] : [],
+    };
+    return HttpResponse.json(detail);
+  }),
 
   // GET /hr/users
   http.get(`${BASE}/hr/users`, ({ request }) => {

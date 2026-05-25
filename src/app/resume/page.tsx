@@ -159,6 +159,8 @@ export default function ResumePage() {
       content: resume?.coverLetterContent,
     });
 
+    // 외부 API 데이터와 한 번만 동기화하는 정당한 패턴
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setCoverLetterDraft(initialDraft);
     lastSavedDraftRef.current = initialDraft;
     setIsCoverLetterLoaded(true);
