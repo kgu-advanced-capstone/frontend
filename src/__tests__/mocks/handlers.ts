@@ -371,7 +371,8 @@ export const handlers = [
       title: body.title,
       description: body.description ?? undefined,
       category: body.category,
-      skills: body.skills || [],
+      skills: [],  // 초기값 빈 배열
+      skillExtractionStatus: 'IN_PROGRESS',  // 새 필드
       participants: [{
         userId: currentUser?.id,
         name: currentUser?.name,
@@ -390,6 +391,13 @@ export const handlers = [
       isOwner: true,
     });
     addNotification(`"${project.title}" 프로젝트를 생성했습니다.`);
+    
+    // 2초 후 상태 변경 (폴링 시뮬레이션)
+    setTimeout(() => {
+      project.skillExtractionStatus = 'COMPLETED';
+      project.skills = ['React', 'Node.js'];  // 시뮬레이션 기술
+    }, 2000);
+    
     return HttpResponse.json(project, { status: 201 });
   }),
 
