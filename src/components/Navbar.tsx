@@ -18,10 +18,14 @@ import * as notificationApi from "@/api/generated/notification/notification";
 import { cn, getProfileImageUrl } from "@/lib/utils";
 import { useTrack } from "@/hooks/useTrack";
 
-const navLinks = [
+const userNavLinks = [
   { href: "/projects", label: "프로젝트 매칭" },
   { href: "/my-projects", label: "프로젝트 관리" },
   { href: "/resume", label: "AI 이력서" },
+];
+
+const adminNavLinks = [
+  { href: "/hr/users", label: "사용자 조회" },
 ];
 
 export default function Navbar() {
@@ -37,6 +41,9 @@ export default function Navbar() {
   const markAllAsRead = notificationApi.useMarkAllAsRead();
   const [mobileOpen, setMobileOpen] = useState(false);
   const { track } = useTrack();
+
+  const isAdmin = user?.role === "ADMIN";
+  const navLinks = isAdmin ? adminNavLinks : userNavLinks;
 
   const unreadCount = notifications.filter((n) => !n.read).length;
 
@@ -71,77 +78,84 @@ export default function Navbar() {
             </Link>
           ))}
 
-          {/* 알림 */}
-          <Popover onOpenChange={(open) => open && track("notification_open", { unreadCount })}>
-            <PopoverTrigger className="relative p-1">
-              <Bell size={20} className="text-muted-foreground hover:text-foreground transition-colors" />
-              {unreadCount > 0 && (
-                <span className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-destructive text-[10px] font-bold text-white">
-                  {unreadCount > 9 ? "9+" : unreadCount}
-                </span>
-              )}
-            </PopoverTrigger>
-            <PopoverContent align="end" className="w-80 p-0">
-              <div className="flex items-center justify-between border-b px-4 py-3">
-                <p className="text-sm font-semibold">알림</p>
+          {/* 알림 — ADMIN에게는 미표시 */}
+          {!isAdmin && (
+            <Popover onOpenChange={(open) => open && track("notification_open", { unreadCount })}>
+              <PopoverTrigger className="relative p-1">
+                <Bell size={20} className="text-muted-foreground hover:text-foreground transition-colors" />
                 {unreadCount > 0 && (
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="h-auto p-0 text-xs text-muted-foreground hover:text-foreground"
-                    onClick={() => { track("notification_mark_all_read"); markAllAsRead.mutate(); }}
-                  >
-                    <CheckCheck size={14} className="mr-1" />
-                    모두 읽음
-                  </Button>
+                  <span className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-destructive text-[10px] font-bold text-white">
+                    {unreadCount > 9 ? "9+" : unreadCount}
+                  </span>
                 )}
-              </div>
-              <ScrollArea className="max-h-64">
-                {notifications.length === 0 ? (
-                  <p className="px-4 py-8 text-center text-sm text-muted-foreground">
-                    알림이 없습니다.
-                  </p>
-                ) : (
-                  <div className="divide-y">
-                    {notifications.map((n) => (
-                      <button
-                        key={n.id}
-                        className={cn(
-                          "w-full px-4 py-3 text-left text-sm transition-colors hover:bg-muted/50",
-                          !n.read && "bg-primary/5"
-                        )}
-                        onClick={() => { track("notification_read", { notificationId: n.id }); n.id && markAsRead.mutate({ id: n.id }); }}
-                      >
-                        <p className={cn("leading-snug", !n.read && "font-medium")}>
-                          {n.message}
-                        </p>
-                        <p className="mt-1 text-xs text-muted-foreground">
-                          {n.time}
-                        </p>
-                      </button>
-                    ))}
-                  </div>
-                )}
-              </ScrollArea>
-            </PopoverContent>
-          </Popover>
+              </PopoverTrigger>
+              <PopoverContent align="end" className="w-80 p-0">
+                <div className="flex items-center justify-between border-b px-4 py-3">
+                  <p className="text-sm font-semibold">알림</p>
+                  {unreadCount > 0 && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-auto p-0 text-xs text-muted-foreground hover:text-foreground"
+                      onClick={() => { track("notification_mark_all_read"); markAllAsRead.mutate(); }}
+                    >
+                      <CheckCheck size={14} className="mr-1" />
+                      모두 읽음
+                    </Button>
+                  )}
+                </div>
+                <ScrollArea className="max-h-64">
+                  {notifications.length === 0 ? (
+                    <p className="px-4 py-8 text-center text-sm text-muted-foreground">
+                      알림이 없습니다.
+                    </p>
+                  ) : (
+                    <div className="divide-y">
+                      {notifications.map((n) => (
+                        <button
+                          key={n.id}
+                          className={cn(
+                            "w-full px-4 py-3 text-left text-sm transition-colors hover:bg-muted/50",
+                            !n.read && "bg-primary/5"
+                          )}
+                          onClick={() => { track("notification_read", { notificationId: n.id }); if (n.id) markAsRead.mutate({ id: n.id }); }}
+                        >
+                          <p className={cn("leading-snug", !n.read && "font-medium")}>
+                            {n.message}
+                          </p>
+                          <p className="mt-1 text-xs text-muted-foreground">
+                            {n.time}
+                          </p>
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </ScrollArea>
+              </PopoverContent>
+            </Popover>
+          )}
 
           {user ? (
             <div className="flex items-center gap-3">
-              <Link
-                href="/profile"
-                className="flex items-center gap-2 rounded-md px-2 py-1 transition-colors hover:bg-muted"
-              >
-                <Avatar className="h-7 w-7">
-                  {profileImageUrl ? (
-                    <AvatarImage src={profileImageUrl} alt={user.name || ""} />
-                  ) : null}
-                  <AvatarFallback className="bg-primary/10 text-xs text-primary">
-                    {user.name?.[0] || "U"}
-                  </AvatarFallback>
-                </Avatar>
-                <span className="text-sm font-medium">{user.name}</span>
-              </Link>
+              {!isAdmin && (
+                <Link
+                  href="/profile"
+                  className="flex items-center gap-2 rounded-md px-2 py-1 transition-colors hover:bg-muted"
+                >
+                  <Avatar className="h-7 w-7">
+                    {profileImageUrl ? (
+                      <AvatarImage src={profileImageUrl} alt={user.name || ""} />
+                    ) : null}
+                    <AvatarFallback className="bg-primary/10 text-xs text-primary">
+                      {user.name?.[0] || "U"}
+                    </AvatarFallback>
+                  </Avatar>
+                  <span className="text-sm font-medium">{user.name}</span>
+                </Link>
+              )}
+              {isAdmin && (
+                <span className="text-sm font-medium text-muted-foreground">{user.name}</span>
+              )}
               <Button size="sm" variant="ghost" onClick={handleLogout}>
                 <LogOut size={16} />
               </Button>
@@ -187,25 +201,27 @@ export default function Navbar() {
           ))}
           {user ? (
             <div className="mt-2 space-y-2">
-              <Link
-                href="/profile"
-                onClick={() => setMobileOpen(false)}
-                className={`flex items-center gap-2 rounded-md px-2 py-2 text-sm font-medium transition-colors ${
-                  pathname === "/profile"
-                    ? "bg-primary/10 text-primary"
-                    : "text-muted-foreground hover:bg-muted"
-                }`}
-              >
-                <Avatar className="h-6 w-6">
-                  {profileImageUrl ? (
-                    <AvatarImage src={profileImageUrl} alt={user.name || ""} />
-                  ) : null}
-                  <AvatarFallback className="bg-primary/10 text-[10px] text-primary">
-                    {user.name?.[0] || "U"}
-                  </AvatarFallback>
-                </Avatar>
-                프로필 수정
-              </Link>
+              {!isAdmin && (
+                <Link
+                  href="/profile"
+                  onClick={() => setMobileOpen(false)}
+                  className={`flex items-center gap-2 rounded-md px-2 py-2 text-sm font-medium transition-colors ${
+                    pathname === "/profile"
+                      ? "bg-primary/10 text-primary"
+                      : "text-muted-foreground hover:bg-muted"
+                  }`}
+                >
+                  <Avatar className="h-6 w-6">
+                    {profileImageUrl ? (
+                      <AvatarImage src={profileImageUrl} alt={user.name || ""} />
+                    ) : null}
+                    <AvatarFallback className="bg-primary/10 text-[10px] text-primary">
+                      {user.name?.[0] || "U"}
+                    </AvatarFallback>
+                  </Avatar>
+                  프로필 수정
+                </Link>
+              )}
               <div className="flex items-center justify-between">
                 <span className="text-sm font-medium">{user.name}</span>
                 <Button
